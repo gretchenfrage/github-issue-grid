@@ -1,4 +1,3 @@
-
 extern crate docopt;
 #[macro_use]
 extern crate error_chain;
@@ -7,34 +6,41 @@ extern crate handlebars;
 extern crate hyper;
 extern crate hyper_tls;
 extern crate native_tls;
-extern crate serde;
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-extern crate slug;
 #[macro_use]
 extern crate redacted_debug;
-
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+extern crate slug;
 pub extern crate tokio_core;
 
-use crate::{
-    error::*,
-    auth::GithubAuth,
-};
-
-use docopt::Docopt;
-use futures::{future, Future, Stream};
-use handlebars::Handlebars;
-use hyper::{
-    {Client, Method, Request, Uri},
-    header::{Authorization, ContentLength, ContentType, UserAgent}
-};
-
 use std::{
+    env,
     fmt::{self, Display, Formatter},
     io::Write,
     str::FromStr,
-    env,
+    sync::Arc,
+};
+
+use docopt::Docopt;
+use futures::{
+    {Future, Stream},
+    future::{
+        self,
+        Either,
+    },
+};
+use handlebars::Handlebars;
+use hyper::{
+    {Client, Method, Request, Uri},
+    header::{Authorization, ContentLength, ContentType, UserAgent},
+};
+pub use tokio_core::reactor::Core as TokioCore;
+
+use crate::{
+    auth::GithubAuth,
+    error::*,
 };
 
 /// Github resource data model.
@@ -46,14 +52,13 @@ pub mod error;
 /// Github auth token handling.
 pub mod auth;
 
-pub use tokio_core::reactor::Core as TokioCore;
-
 /// Handlebars template for rendering as markdown.
 mod template;
 
 /// Github access service.
+#[derive(Clone)]
 pub struct Github {
-    client: Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
+    client: Arc<Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>>,
     user_agent: UserAgent,
     token: Authorization<String>,
 }
@@ -67,10 +72,11 @@ impl Github {
         agent: UserAgent,
         token: &str,
     ) -> Result<Self> {
+        let client = hyper::Client::configure()
+            .connector(hyper_tls::HttpsConnector::new(4, handle)?)
+            .build(handle);
         Ok(Self {
-            client: hyper::Client::configure()
-                .connector(hyper_tls::HttpsConnector::new(4, handle)?)
-                .build(handle),
+            client: Arc::new(client),
             user_agent: agent,
             token: Authorization(format!("token {}", token)),
         })
@@ -80,14 +86,14 @@ impl Github {
     ///
     /// Creates and returns a tokio core.
     pub fn from_auth<A>(auth: A) -> Result<(Self, TokioCore)>
-    where
-        A: Into<GithubAuth>
+        where
+            A: Into<GithubAuth>
     {
         // resolve user agent at compile time
         let user_agent = UserAgent::new(concat!(
-            env!("CARGO_PKG_NAME"),
-            "/",
-            env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_NAME"),
+        "/",
+        env!("CARGO_PKG_VERSION"),
         ));
 
         // create the tokio reactor core
@@ -107,8 +113,8 @@ impl Github {
     ///
     /// Other methods exist as typed helpers.
     pub fn get<T>(&self, endpoint: &str) -> impl Future<Item=T, Error=Error>
-    where
-        T: serde::de::DeserializeOwned,
+        where
+            T: serde::de::DeserializeOwned,
     {
         let url = Uri::from_str(endpoint).expect("Could not parse uri");
         let mut req = Request::new(Method::Get, url);
@@ -136,15 +142,14 @@ impl Github {
     /// GET a github issue.
     pub fn issue(
         &self,
-        user: &str,
-        repo: &str,
+        repo: &RepoLocation,
         number: usize,
-    ) -> impl Future<Item=model::Issue, Error=error::Error> {
+    ) -> impl Future<Item=model::Issue, Error=Error> {
         self.get(&format!(
             "{}/repos/{owner}/{repo}/issues/{number}",
             GITHUB_API_ENDPOINT,
-            owner = user,
-            repo = repo,
+            owner = repo.user,
+            repo = repo.repo,
             number = number
         ))
     }
@@ -152,17 +157,45 @@ impl Github {
     /// GET all github issues in a repo.
     pub fn issues(
         &self,
-        user: &str,
-        repo: &str,
-        issue_state: &IssueState,
-    ) -> impl Future<Item=Vec<model::Issue>, Error=error::Error> {
+        repo: &RepoLocation,
+        issue_state: IssueState,
+    ) -> impl Future<Item=Vec<model::Issue>, Error=Error> {
         self.get(&format!(
             "{}/repos/{}/{}/issues?state={}",
             GITHUB_API_ENDPOINT,
-            user,
-            repo,
+            &repo.user,
+            &repo.repo,
             issue_state
         ))
+    }
+
+    /// Given a vector of issues already fetched from a repository,
+    /// fetch their comments.
+    pub fn issue_comments(
+        &self,
+        issues: Vec<model::Issue>,
+    ) -> impl Future<Item=Vec<model::IssueWithComments>, Error=Error> {
+        let github = self.clone();
+
+        future::join_all({
+            issues.into_iter()
+                .map(move |issue| {
+                    let get_comment = github
+                        .get::<Vec<model::Comment>>(&issue.comments_url);
+                    Future::join(
+                        future::ok(issue),
+                        get_comment,
+                    )
+                })
+        })
+            .map(|issues| issues
+                .into_iter()
+                .map(|(issue, comments)| model::IssueWithComments {
+                    issue,
+                    comments,
+                })
+                .collect::<Vec<model::IssueWithComments>>()
+            )
     }
 }
 
@@ -172,6 +205,26 @@ pub enum IssueState {
     Open,
     Closed,
     All,
+}
+
+/// Identifying information for a github repository.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct RepoLocation {
+    pub user: String,
+    pub repo: String,
+}
+
+impl RepoLocation {
+    pub fn new<S1, S2>(user: S1, repo: S2) -> Self
+        where
+            S1: ToString,
+            S2: ToString,
+    {
+        RepoLocation {
+            user: user.to_string(),
+            repo: repo.to_string(),
+        }
+    }
 }
 
 impl IssueState {
@@ -189,12 +242,6 @@ impl Display for IssueState {
         f.write_str(self.to_str())
     }
 }
-
-
-
-
-
-
 
 
 /// Private helper function.
@@ -319,39 +366,29 @@ fn parse_args() -> Args {
 
 /// Main function meat.
 fn run() -> Result<()> {
+    // parse
     let args = parse_args();
+    let (
+        github,
+        mut core
+    ) = Github::from_auth(args.env_token.clone())?;
+    let repo = RepoLocation::new(&args.arg_username, &args.arg_repo);
 
-    let (github, mut core) = Github::from_auth(args.env_token.clone())?;
-
-    let fut_issues: Box<dyn Future<Item=_, Error=_>>= match args.arg_issue {
-        Some(issue_number) => Box::new(
-            github
-                .issue(&args.arg_username, &args.arg_repo, issue_number)
-                .map(|issue| vec![issue]),
+    // fetch issues
+    let issues = match args.arg_issue {
+        Some(issue_number) => Either::A(
+            github.issue(&repo, issue_number)
+                .map(|issue| vec![issue])
         ),
-        None => Box::new(github.issues(&args.arg_username, &args.arg_repo, &args.flag_state)),
+        None => Either::B(
+            github.issues(&repo, args.flag_state)
+        ),
     };
+    let issues = issues
+        .and_then(|issue_vec| github.issue_comments(issue_vec));
+    let issues = core.run(issues)?;
 
-    let fut_issues_with_comments = fut_issues.and_then(|issues| {
-        future::join_all(issues.into_iter().map(|issue| {
-            let comments_url = issue.comments_url.clone();
-            Future::join(
-                future::ok(issue),
-                github.get::<Vec<model::Comment>>(&comments_url),
-            )
-        }))
-    });
-    let fut_data = fut_issues_with_comments.map(|issues| {
-        issues
-            .into_iter()
-            .map(|(issue, comments)| model::IssueWithComments {
-                issue: issue,
-                comments: comments,
-            })
-    });
-
-    let issues = core.run(fut_data)?;
-
+    // render
     let mut reg = Handlebars::new();
     reg.register_template_string("issue", template::TEMPLATE)?;
 
