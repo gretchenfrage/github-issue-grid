@@ -13,6 +13,8 @@ extern crate serde_derive;
 extern crate slug;
 extern crate tokio_core;
 
+use errors::*;
+
 use docopt::Docopt;
 use futures::Stream;
 use futures::{future, Future};
@@ -24,10 +26,14 @@ use std::fmt;
 use std::io::Write;
 use std::str::FromStr;
 
-mod model;
+/// Github resource data model.
+pub mod model;
+
+/// Handlebars template for rendering as markdown.
 mod template;
 
-mod errors {
+/// Github issues export error types.
+pub mod errors {
     error_chain!{
         errors {
             Request(t: String) {
@@ -48,17 +54,18 @@ mod errors {
     }
 }
 
-use errors::*;
 
-struct Github {
+/// Github access service.
+pub struct Github {
     client: Client<hyper_tls::HttpsConnector<hyper::client::HttpConnector>>,
     user_agent: UserAgent,
     token: Authorization<String>,
 }
 
-impl Github {
-    const API_ENDPOINT: &'static str = "https://api.github.com";
+const GITHUB_API_ENDPOINT: &'static str = "https://api.github.com";
 
+impl Github {
+    /// Low-level constructor.
     pub fn new(
         handle: &tokio_core::reactor::Handle,
         agent: UserAgent,
@@ -73,7 +80,10 @@ impl Github {
         })
     }
 
-    pub fn get<T>(&self, endpoint: &str) -> impl Future<Item = T, Error = Error>
+    /// GET request, retrieve and parse.
+    ///
+    /// Other methods exist as typed helpers.
+    pub fn get<T>(&self, endpoint: &str) -> impl Future<Item=T, Error=Error>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -100,37 +110,40 @@ impl Github {
         })
     }
 
+    /// GET a github issue.
     pub fn issue(
         &self,
         user: &str,
         repo: &str,
         number: usize,
-    ) -> impl Future<Item = model::Issue, Error = errors::Error> {
+    ) -> impl Future<Item=model::Issue, Error=errors::Error> {
         self.get(&format!(
             "{}/repos/{owner}/{repo}/issues/{number}",
-            Self::API_ENDPOINT,
+            GITHUB_API_ENDPOINT,
             owner = user,
             repo = repo,
             number = number
         ))
     }
 
+    /// GET all github issues in a repo.
     pub fn issues(
         &self,
         user: &str,
         repo: &str,
-        state: &State,
-    ) -> impl Future<Item = Vec<model::Issue>, Error = errors::Error> {
+        issue_state: &State,
+    ) -> impl Future<Item=Vec<model::Issue>, Error=errors::Error> {
         self.get(&format!(
             "{}/repos/{}/{}/issues?state={}",
-            Self::API_ENDPOINT,
+            GITHUB_API_ENDPOINT,
             user,
             repo,
-            state
+            issue_state
         ))
     }
 }
 
+/// Private helper function.
 fn mkdir(path: &str) -> Result<()> {
     if let Err(err) = std::fs::create_dir(path) {
         match err.kind() {
@@ -143,6 +156,9 @@ fn mkdir(path: &str) -> Result<()> {
     Ok(())
 }
 
+/// Private helper function.
+///
+/// Path to store a a issue's markdown file in.
 fn issue_to_filename(path: &str, issue: &model::Issue) -> String {
     format!(
         "{}/{:03}-{}.md",
@@ -152,7 +168,10 @@ fn issue_to_filename(path: &str, issue: &model::Issue) -> String {
     )
 }
 
-fn serialize(path: &str, hb: &mut Handlebars, data: &model::IssueWithComments) -> Result<()> {
+/// Private helper function.
+///
+/// Render and save an issue to the file system.
+fn save_issue(path: &str, hb: &mut Handlebars, data: &model::IssueWithComments) -> Result<()> {
     let md = hb.render("issue", &data)?;
     let filename = issue_to_filename(path, &data.issue);
     let mut f = std::fs::File::create(&filename)?;
@@ -161,6 +180,7 @@ fn serialize(path: &str, hb: &mut Handlebars, data: &model::IssueWithComments) -
     Ok(())
 }
 
+/// CLI usage string.
 const USAGE: &'static str = r#"
 Export issues from GitHub into markdown files.
 
@@ -182,8 +202,9 @@ Options:
                                     both [default: open].
 "#;
 
+/// Possible states for an issue to be in.
 #[derive(Debug, Deserialize)]
-enum State {
+pub enum State {
     Open,
     Closed,
     All,
@@ -199,6 +220,7 @@ impl fmt::Display for State {
     }
 }
 
+/// CLI arguments.
 #[derive(Debug, Deserialize)]
 struct Args {
     flag_version: bool,
@@ -215,6 +237,7 @@ struct Args {
     flag_state: State,
 }
 
+/// Parse CLI arguments.
 fn parse_args() -> Args {
     let mut args: Args = Docopt::new(USAGE)
         .and_then(|d| d.deserialize())
@@ -258,6 +281,7 @@ fn parse_args() -> Args {
     args
 }
 
+/// Main function meat.
 fn run() -> Result<()> {
     let args = parse_args();
 
@@ -274,7 +298,7 @@ fn run() -> Result<()> {
         &args.env_token,
     )?;
 
-    let fut_issues: Box<Future<Item = _, Error = _>> = match args.arg_issue {
+    let fut_issues: Box<dyn Future<Item=_, Error=_>>= match args.arg_issue {
         Some(issue_number) => Box::new(
             github
                 .issue(&args.arg_username, &args.arg_repo, issue_number)
@@ -308,15 +332,16 @@ fn run() -> Result<()> {
 
     mkdir(&args.flag_path)?;
     for data in issues.into_iter() {
-        serialize(&args.flag_path, &mut reg, &data)?;
+        save_issue(&args.flag_path, &mut reg, &data)?;
     }
 
     Ok(())
 }
 
+/// Main function wrapper.
+#[allow(dead_code)]
 fn main() {
     if let Err(ref e) = run() {
-        use std::io::Write;
         let stderr = &mut ::std::io::stderr();
         let errmsg = "Error writing to stderr";
 

@@ -1,3 +1,5 @@
+
+/// Handlebars template for rendering issue to markdown.
 pub const TEMPLATE: &'static str = r#"# [{{issue.title}}]({{issue.html_url}})
 
 > state: **{{issue.state}}** opened by: **{{issue.user.login}}** on: **{{issue.created_at}}**

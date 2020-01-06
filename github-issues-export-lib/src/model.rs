@@ -1,10 +1,5 @@
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Label {
-    pub url: String,
-    pub name: String,
-    pub color: String,
-}
 
+/// HTTP resource model for github user.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     pub login: String,
@@ -25,6 +20,7 @@ pub struct User {
     pub site_admin: bool,
 }
 
+/// HTTP resource model for github issue.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Issue {
     pub id: u64,
@@ -47,6 +43,15 @@ pub struct Issue {
     pub updated_at: String,
 }
 
+/// HTTP resource model for github issue label.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Label {
+    pub url: String,
+    pub name: String,
+    pub color: String,
+}
+
+/// HTTP resource model for github issue comment.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Comment {
     pub id: u64,
@@ -58,6 +63,7 @@ pub struct Comment {
     pub updated_at: String,
 }
 
+/// HTTP resource model for github issue, and its comments.
 #[derive(Serialize)]
 pub struct IssueWithComments {
     pub issue: Issue,
