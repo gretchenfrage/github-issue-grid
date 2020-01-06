@@ -15,14 +15,21 @@ extern crate serde_json;
 extern crate slug;
 pub extern crate tokio_core;
 
+use crate::{
+    error::*,
+    auth::GithubAuth,
+    render::IssueRenderer,
+};
+
 use std::{
     env,
     fmt::{self, Display, Formatter},
     io::Write,
+    fs::File,
     str::FromStr,
     sync::Arc,
+    path::PathBuf,
 };
-
 use docopt::Docopt;
 use futures::{
     {Future, Stream},
@@ -31,17 +38,12 @@ use futures::{
         Either,
     },
 };
-use handlebars::Handlebars;
 use hyper::{
     {Client, Method, Request, Uri},
     header::{Authorization, ContentLength, ContentType, UserAgent},
 };
-pub use tokio_core::reactor::Core as TokioCore;
 
-use crate::{
-    auth::GithubAuth,
-    error::*,
-};
+pub use tokio_core::reactor::Core as TokioCore;
 
 /// Github resource data model.
 pub mod model;
@@ -52,8 +54,8 @@ pub mod error;
 /// Github auth token handling.
 pub mod auth;
 
-/// Handlebars template for rendering as markdown.
-mod template;
+/// Rendering issues to markdown.
+pub mod render;
 
 /// Github access service.
 #[derive(Clone)]
@@ -257,30 +259,6 @@ fn mkdir(path: &str) -> Result<()> {
     Ok(())
 }
 
-/// Private helper function.
-///
-/// Path to store a a issue's markdown file in.
-fn issue_to_filename(path: &str, issue: &model::Issue) -> String {
-    format!(
-        "{}/{:03}-{}.md",
-        path,
-        issue.number,
-        slug::slugify(&issue.title),
-    )
-}
-
-/// Private helper function.
-///
-/// Render and save an issue to the file system.
-fn save_issue(path: &str, hb: &mut Handlebars, data: &model::IssueWithComments) -> Result<()> {
-    let md = hb.render("issue", &data)?;
-    let filename = issue_to_filename(path, &data.issue);
-    let mut f = std::fs::File::create(&filename)?;
-    println!("Writing name {}", filename);
-    f.write_all(md.as_bytes())?;
-    Ok(())
-}
-
 /// CLI usage string.
 const USAGE: &'static str = r#"
 Export issues from GitHub into markdown files.
@@ -388,15 +366,20 @@ fn run() -> Result<()> {
         .and_then(|issue_vec| github.issue_comments(issue_vec));
     let issues = core.run(issues)?;
 
-    // render
-    let mut reg = Handlebars::new();
-    reg.register_template_string("issue", template::TEMPLATE)?;
+    // render and save
+    let render = IssueRenderer::new();
 
     mkdir(&args.flag_path)?;
-    for data in issues.into_iter() {
-        save_issue(&args.flag_path, &mut reg, &data)?;
+    for issue in &issues {
+        let (md, path) = render.render_md(issue)?;
+        let path = PathBuf::from(&args.flag_path).join(path);
+
+        let mut f = File::create(&path)?;
+        println!("Writing name {}", path.to_str().unwrap());
+        f.write_all(md.as_bytes())?;
     }
 
+    // done
     Ok(())
 }
 
