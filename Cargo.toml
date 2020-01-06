@@ -1,4 +1,5 @@
 [workspace]
 members = [
     "issue-grid",
+    "github-issues-export-lib",
 ]
