@@ -5,3 +5,6 @@ target
 *.lock
 docs
 **/*.rs.bk
+.DS_Store
+md
+
