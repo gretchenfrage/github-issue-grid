@@ -1,3 +1,4 @@
+
 extern crate docopt;
 #[macro_use]
 extern crate error_chain;
@@ -11,49 +12,44 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate slug;
-extern crate tokio_core;
+#[macro_use]
+extern crate redacted_debug;
 
-use errors::*;
+pub extern crate tokio_core;
+
+use crate::{
+    error::*,
+    auth::GithubAuth,
+};
 
 use docopt::Docopt;
-use futures::Stream;
-use futures::{future, Future};
+use futures::{future, Future, Stream};
 use handlebars::Handlebars;
-use hyper::header::{Authorization, ContentLength, ContentType, UserAgent};
-use hyper::{Client, Method, Request, Uri};
+use hyper::{
+    {Client, Method, Request, Uri},
+    header::{Authorization, ContentLength, ContentType, UserAgent}
+};
 
-use std::fmt;
-use std::io::Write;
-use std::str::FromStr;
+use std::{
+    fmt::{self, Display, Formatter},
+    io::Write,
+    str::FromStr,
+    env,
+};
 
 /// Github resource data model.
 pub mod model;
 
+/// Error types for this crate.
+pub mod error;
+
+/// Github auth token handling.
+pub mod auth;
+
+pub use tokio_core::reactor::Core as TokioCore;
+
 /// Handlebars template for rendering as markdown.
 mod template;
-
-/// Github issues export error types.
-pub mod errors {
-    error_chain!{
-        errors {
-            Request(t: String) {
-                description("invalid request name")
-                display("request failed: '{}'", t)
-            }
-        }
-        foreign_links {
-            Docopt(::docopt::Error);
-            Io(::std::io::Error);
-            Hyper(::hyper::Error);
-            HbTemplate(::handlebars::TemplateError);
-            HbRender(::handlebars::RenderError);
-            NativeTls(::native_tls::Error);
-            Json(::serde_json::Error);
-            Utf8(::std::str::Utf8Error);
-        }
-    }
-}
-
 
 /// Github access service.
 pub struct Github {
@@ -65,7 +61,7 @@ pub struct Github {
 const GITHUB_API_ENDPOINT: &'static str = "https://api.github.com";
 
 impl Github {
-    /// Low-level constructor.
+    /// Low level constructor. Consider using `from_auth`.
     pub fn new(
         handle: &tokio_core::reactor::Handle,
         agent: UserAgent,
@@ -78,6 +74,33 @@ impl Github {
             user_agent: agent,
             token: Authorization(format!("token {}", token)),
         })
+    }
+
+    /// High level constructor.
+    ///
+    /// Creates and returns a tokio core.
+    pub fn from_auth<A>(auth: A) -> Result<(Self, TokioCore)>
+    where
+        A: Into<GithubAuth>
+    {
+        // resolve user agent at compile time
+        let user_agent = UserAgent::new(concat!(
+            env!("CARGO_PKG_NAME"),
+            "/",
+            env!("CARGO_PKG_VERSION"),
+        ));
+
+        // create the tokio reactor core
+        let tokio_core = TokioCore::new()?;
+
+        // delegate to low-level constructor
+        Github::new(
+            &tokio_core.handle(),
+            user_agent,
+            &auth.into().token,
+        ).map(move |github|
+            (github, tokio_core)
+        )
     }
 
     /// GET request, retrieve and parse.
@@ -116,7 +139,7 @@ impl Github {
         user: &str,
         repo: &str,
         number: usize,
-    ) -> impl Future<Item=model::Issue, Error=errors::Error> {
+    ) -> impl Future<Item=model::Issue, Error=error::Error> {
         self.get(&format!(
             "{}/repos/{owner}/{repo}/issues/{number}",
             GITHUB_API_ENDPOINT,
@@ -131,8 +154,8 @@ impl Github {
         &self,
         user: &str,
         repo: &str,
-        issue_state: &State,
-    ) -> impl Future<Item=Vec<model::Issue>, Error=errors::Error> {
+        issue_state: &IssueState,
+    ) -> impl Future<Item=Vec<model::Issue>, Error=error::Error> {
         self.get(&format!(
             "{}/repos/{}/{}/issues?state={}",
             GITHUB_API_ENDPOINT,
@@ -142,6 +165,37 @@ impl Github {
         ))
     }
 }
+
+/// Possible states to fetch issues by.
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize)]
+pub enum IssueState {
+    Open,
+    Closed,
+    All,
+}
+
+impl IssueState {
+    fn to_str(&self) -> &'static str {
+        match *self {
+            IssueState::Open => "open",
+            IssueState::Closed => "closed",
+            IssueState::All => "all",
+        }
+    }
+}
+
+impl Display for IssueState {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.write_str(self.to_str())
+    }
+}
+
+
+
+
+
+
+
 
 /// Private helper function.
 fn mkdir(path: &str) -> Result<()> {
@@ -202,24 +256,6 @@ Options:
                                     both [default: open].
 "#;
 
-/// Possible states for an issue to be in.
-#[derive(Debug, Deserialize)]
-pub enum State {
-    Open,
-    Closed,
-    All,
-}
-
-impl fmt::Display for State {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            State::Open => write!(f, "open"),
-            State::Closed => write!(f, "closed"),
-            State::All => write!(f, "all"),
-        }
-    }
-}
-
 /// CLI arguments.
 #[derive(Debug, Deserialize)]
 struct Args {
@@ -234,7 +270,7 @@ struct Args {
     #[serde(skip)]
     arg_issue: Option<usize>,
     flag_path: String,
-    flag_state: State,
+    flag_state: IssueState,
 }
 
 /// Parse CLI arguments.
@@ -285,18 +321,7 @@ fn parse_args() -> Args {
 fn run() -> Result<()> {
     let args = parse_args();
 
-    let mut core = tokio_core::reactor::Core::new()?;
-    let handle = core.handle();
-
-    let github = Github::new(
-        &handle,
-        UserAgent::new(format!(
-            "{}/{}",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION")
-        )),
-        &args.env_token,
-    )?;
+    let (github, mut core) = Github::from_auth(args.env_token.clone())?;
 
     let fut_issues: Box<dyn Future<Item=_, Error=_>>= match args.arg_issue {
         Some(issue_number) => Box::new(
