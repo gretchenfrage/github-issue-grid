@@ -8,6 +8,7 @@ repository = "https://github.com/boxdot/github-issues-export-rs"
 keywords = ["markdown", "github", "issues"]
 categories = ["command-line-utilities"]
 readme = "README.md"
+workspace = ".."
 
 [dependencies]
 docopt = "0.8"

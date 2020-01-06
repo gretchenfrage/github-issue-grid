@@ -3,5 +3,6 @@ name = "issue-grid"
 version = "0.1.0"
 authors = ["Phoenix Kahlo <kahlo.phoenix@gmail.com>"]
 edition = "2018"
+workspace = ".."
 
 [dependencies]

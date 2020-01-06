@@ -16,10 +16,8 @@ pub struct IssueRenderer {
 impl IssueRenderer {
     pub fn new() -> Self {
         let mut reg = Handlebars::new();
-        reg.register_template_string(
-            "issue",
-            include_str!("template.hb")
-        ).expect("unexpected handlebars template compilation failure");
+        reg.register_template_string("issue", TEMPLATE)
+            .expect("unexpected handlebars template compilation failure");
 
         IssueRenderer {
             hb: reg,
@@ -44,7 +42,7 @@ impl IssueRenderer {
 }
 
 /// Handlebars template for rendering issue to markdown.
-pub const TEMPLATE: &'static str = include_str!("template.hb");
+const TEMPLATE: &'static str = include_str!("template.hb");
 
 #[test]
 fn new_issue_renderer() {
