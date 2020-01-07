@@ -64,7 +64,7 @@ pub struct Comment {
 }
 
 /// HTTP resource model for github issue, and its comments.
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IssueWithComments {
     pub issue: Issue,
     pub comments: Vec<Comment>,

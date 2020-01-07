@@ -13,6 +13,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate slug;
 extern crate docopt;
+extern crate markdown;
 
 pub extern crate tokio_core;
 
