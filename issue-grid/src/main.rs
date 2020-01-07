@@ -45,6 +45,10 @@ use rocket_cache_response::CacheResponse;
 /// Conversions between HTTP resource models.
 pub mod remodel;
 
+/// Serde utility macro.
+#[macro_use]
+pub mod serde_util;
+
 #[get("/")]
 fn root() -> Redirect {
     Redirect::to("/static/index.html")
@@ -87,276 +91,11 @@ mod cfg_model {
         order: Option<Vec<String>>,
     }
 
-    macro_rules! serde_as_list {
-        (
-        struct $struct:ident;
-        $($t:tt)*
-        )=>{
-            impl serde::Serialize for $struct {
-                fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-                where
-                    S: serde::Serializer,
-                {
-                    use serde::ser::SerializeSeq;
-
-                    let mut s_seq = s.serialize_seq(None)?;
-
-                    serde_as_list!(@ser, $struct, s_seq, self, ($($t)*))
-                }
-            }
-
-            impl<'de> serde::Deserialize<'de> for $struct {
-                fn deserialize<D>(d: D) -> Result<Self, D::Error>
-                where
-                    D: serde::de::Deserializer<'de>
-                {
-                    use serde::de::{Visitor, SeqAccess, Error};
-                    use std::fmt::{self, Formatter};
-
-                    struct V;
-                    impl<'de2> Visitor<'de2> for V {
-                        type Value = $struct;
-
-                        fn expecting(&self, f: &mut Formatter) -> fmt::Result {
-                            f.write_str(concat!(
-                                "sequence form of ",
-                                stringify!($struct)
-                            ))
-                        }
-
-                        fn visit_seq<A>(self, mut d_seq: A) -> Result<Self::Value, A::Error>
-                        where
-                            A: SeqAccess<'de2>
-                        {
-                            serde_as_list!(@de, $struct, d_seq, self, ($struct {}), ($($t)*))
-                        }
-                    }
-
-                    d.deserialize_seq(V)
-                }
-            }
-        };
-
-        // ====
-
-        // ser field case
-        (
-        @ser, $struct:ty, $s_seq:expr, $self:expr,
-        (
-        field $field:ident;
-        $($t:tt)*
-        )
-        )=>{{
-            $s_seq.serialize_element(&$self.$field)?;
-
-            // recurse
-            serde_as_list!(@ser, $struct, $s_seq, $self, ($($t)*))
-        }};
-
-        // ser option_tail case
-        (
-        @ser, $struct:ty, $s_seq:expr, $self:expr,
-        (
-        option_tail $field:ident;
-        $($t:tt)*
-        )
-        )=>{{
-            if let Some(ref vec) = $self.$field {
-                for elem in vec {
-                    $s_seq.serialize_element(elem)?;
-                }
-            }
-
-            // recurse into base case
-            serde_as_list!(@assert_empty_parens, ($($t)*));
-            serde_as_list!(@ser, $struct, $s_seq, $self, ($($t)*))
-        }};
-
-        // ser base case
-        (
-        @ser, $struct:ty, $s_seq:expr, $self:expr,
-        ()
-        )=>{{
-            $s_seq.end()
-        }};
-
-        // ====
-
-        // de field case
-        (
-        @de, $struct:ty, $d_seq:expr, $self:expr,
-        (   // constructor accumulator
-            $struct_cons:ident {
-                $($t_cons:tt)*
-            }
-        ),
-        (
-        field $field:ident;
-        $($t:tt)*
-        )
-        )=>{{
-            let $field = $d_seq.next_element()?
-                .ok_or_else(|| A::Error::custom(concat!(
-                    stringify!($struct),
-                    ".",
-                    stringify!($field),
-                )))?;
-
-            // recurse
-            serde_as_list!(
-                @de, $struct, $d_seq, $self,
-                (
-                    $struct_cons {
-                        $($t_cons)*
-                        $field: $field,
-                    }
-                ),
-                ($($t)*)
-            )
-        }};
-
-        // de option_tail case
-        (
-        @de, $struct:ty, $d_seq:expr, $self:expr,
-        (   // constructor accumulator
-            $struct_cons:ident {
-                $($t_cons:tt)*
-            }
-        ),
-        (
-        option_tail $field:ident;
-        $($t:tt)*
-        )
-        )=>{{
-            let mut tail = Vec::new();
-            while let Some(elem) = $d_seq.next_element()? {
-                tail.push(elem);
-            }
-            let $field = match tail.len() {
-                0 => None,
-                _ => Some(tail),
-            };
-
-            // recurse
-            serde_as_list!(@assert_empty_parens, ($($t)*));
-            serde_as_list!(
-                @de, $struct, $d_seq, $self,
-                (
-                    $struct_cons {
-                        $($t_cons)*
-                        $field: $field,
-                    }
-                ),
-                ($($t:tt)*)
-            )
-        }};
-
-        // de base case
-        (
-        @de, $struct:ty, $d_seq:expr, $self:expr,
-        (   // constructor accumulator
-            $struct_cons:ident {
-                $($t_cons:tt)*
-            }
-        ),
-        ()
-        )=>{{
-            Ok($struct_cons {
-                $($t_cons)*
-            })
-        }};
-
-        // ====
-
-        (@assert_empty_parens, ())=>{};
-        (@deform, $($t:tt)*)=>{
-            $($t)*
-        };
-
-    }
-
-
     serde_as_list! {
         struct IssueSortInstr;
         field regex;
         option_tail order;
     }
-
-    //trace_macros!(false);
-
-
-    /*
-    impl serde::Serialize for IssueSortInstr {
-        fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer
-        {
-            use serde::ser::SerializeSeq;
-
-            let mut s_seq = s.serialize_seq(None)?;
-
-            s_seq.serialize_element(&self.regex)?;
-            if let Some(ref vec) = &self.order {
-                for elem in vec {
-                    s_seq.serialize_element(elem)?;
-                }
-            }
-
-            s_seq.end()
-        }
-    }
-
-    impl<'de> serde::Deserialize<'de> for IssueSortInstr {
-        fn deserialize<D>(d: D) -> Result<Self,D::Error>
-        where
-            D: serde::de::Deserializer<'de>
-        {
-            use serde::de::{Visitor, SeqAccess, Error};
-            use std::fmt::{self, Formatter};
-
-            struct V;
-            impl<'de2> Visitor<'de2> for V {
-                type Value = IssueSortInstr;
-
-                fn expecting(&self, f: &mut Formatter) -> fmt::Result {
-                    f.write_str(concat!(
-                        "sequence form of ",
-                        stringify!(IssueSortInstr)
-                    ))
-                }
-
-                fn visit_seq<A>(self, mut d_seq: A) -> Result<Self::Value, A::Error>
-                where
-                    A: SeqAccess<'de2>
-                {
-                    let regex = d_seq.next_element()?
-                        .ok_or_else(|| A::Error::custom(concat!(
-                            stringify!(IssueSortInst),
-                            ".",
-                            stringify!(regex),
-                        )))?;
-
-                    let mut tail = Vec::new();
-                    while let Some(elem) = d_seq.next_element()? {
-                        tail.push(elem);
-                    }
-                    let order = match tail.len() {
-                        0 => None,
-                        _ => Some(tail),
-                    };
-
-                    Ok(IssueSortInstr {
-                        regex,
-                        order,
-                    })
-
-                }
-            }
-
-            d.deserialize_seq(V)
-        }
-    }
-    */
 }
 
 impl Config {
@@ -414,41 +153,12 @@ impl Repo {
     }
 }
 
-/*
-impl RepoData {
-    pub fn fetch
-}
-*/
-
 #[get("/api/list_issues")]
 fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<model::IssueSummary>> {
     let repo = repo_lock.read();
 
     resp(repo.issues.clone())
 }
-
-
-/*
-fn fetch() -> Result<(), ()> {
-    let auth = GithubAuth::from_env("GITHUB_TOKEN").unwrap();
-    let (github, mut core) = Github::from_auth(auth).unwrap();
-    let repo = RepoLocation::new("correlation-one", "c1");
-    let issues = github.issues(&repo, IssueState::Open);
-    /*
-    let issues = issues
-        .and_then({
-            let github = github.clone();
-            move |issue_vec| github.issue_comments(issue_vec)
-        });
-        */
-    let issues = core.run(issues).unwrap();
-    let issues: Vec<model::IssueSummary> = issues.gh_into();
-
-    println!("{:#?}", issues);
-
-    Ok(())
-}
-*/
 
 fn main() {
 
