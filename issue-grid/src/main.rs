@@ -18,16 +18,18 @@ extern crate regex;
 use crate::{
     sort::OrganizeInstr,
     remodel::GithubInto,
+    cfg_parse::read_config,
 };
 
 use std::{
+    env,
+    path::PathBuf,
     sync::RwLock,
     ops::{Deref, DerefMut},
 };
 
 use github_issues_export_lib::prelude::*;
 
-use futures::prelude::*;
 use serde::{
     Serialize,
 };
@@ -97,6 +99,7 @@ impl RepoMutex {
 /// Mutable global repo data.
 pub struct Repo {
     pub issues: Vec<model::IssueSummary>,
+    pub issue_bins: Vec<Vec<model::IssueSummary>>,
 }
 
 impl Repo {
@@ -113,6 +116,17 @@ impl Repo {
         // remodel
         let issues: Vec<model::IssueSummary> = issues.gh_into();
 
+        // sort
+        let issue_bins = sort::bin_sort(
+            &config.organize,
+            &issues,
+            |issue, regex| {
+                issue.labels.iter()
+                    .map(|label| label.name.clone())
+                    .collect()
+            }
+        );
+
         // done
         Ok(Repo {
             issues
@@ -127,29 +141,35 @@ fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<model::IssueSummary>> {
     resp(repo.issues.clone())
 }
 
+/*
+#[get("/api/bin_issues")]
+fn bin_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<Vec<model::IssueSummary>>> {
+    let repo = repo_lock.read();
+
+}
+*/
+
 fn main() {
-
-    return;
-
-    /*
-    let repo = Repo::fetch(&config).unwrap();
-    let repo_lock = RepoMutex::new(repo);
-
-    let path = env::var("CARGO_MANIFEST_DIR").ok()
+    let base = env::var("CARGO_MANIFEST_DIR").ok()
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("static");
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    let config = read_config(base.join("config.yaml"))
+        .expect("TODO");
+
+    let repo = Repo::fetch(&config)
+        .expect("TODO");
+    let repo_lock = RepoMutex::new(repo);
 
     rocket::ignite()
         .manage(config)
         .manage(repo_lock)
-        .mount("/static", StaticFiles::from(path))
+        .mount("/static", StaticFiles::from(base.join("static")))
         .mount("/", routes!(
             root,
             list_issues,
         ))
         .launch();
-        */
 }
 
 /// HTTP resource model.

@@ -1,0 +1,13 @@
+repo: gretchenfrage/reflex
+auth_var: GITHUB_TOKEN
+organize:
+  - bin:
+      - "foo*.*"
+      - "bar"
+      - "bar"
+      - "bar"
+  - sort:
+      - "dklfhjgkl"
+      - "baz"
+  - sort:
+      - "zamboni!"
