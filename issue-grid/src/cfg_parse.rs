@@ -119,9 +119,9 @@ impl<S: AsRef<str>> ParseCfg<S> for Regex {
     }
 }
 
-impl ParseCfg<cfg_model::IssueSortInstr> for sort::IssueSortInstr {
+impl ParseCfg<cfg_model::IssueSortInstr> for sort::FilterSort {
     fn parse_cfg(old: cfg_model::IssueSortInstr) -> Result<Self, ()> {
-        Ok(sort::IssueSortInstr {
+        Ok(sort::FilterSort {
             filter: old.regex.cfg_parse()?,
             sorter: old.order.cfg_parse()?,
         })
