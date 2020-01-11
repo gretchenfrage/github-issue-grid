@@ -16,7 +16,13 @@ pub struct Label {
     pub color: Color,
 }
 
-// == re-usable models ==
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BinSummary {
+    pub name: Option<String>,
+    pub color: Option<Color>,
+    pub issues: Vec<IssueSummary>,
+    pub is_overflow: bool,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct User {

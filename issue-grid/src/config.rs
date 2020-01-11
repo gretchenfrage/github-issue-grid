@@ -1,6 +1,7 @@
 
 use crate::{
-    sort::PatternList
+    sort::PatternList,
+    model::Color,
 };
 use std::{
     str::FromStr,
@@ -20,6 +21,8 @@ pub struct Config {
 
 #[derive(Debug, Clone)]
 pub struct BinConfig {
+    pub name: Option<String>,
+    pub color: Option<Color>,
     pub sort: Option<PatternList<()>>,
 }
 
@@ -61,11 +64,13 @@ auth_var: GITHUB_TOKEN
 repo: gretchenfrage/reflex
 bins:
   - filter: "^Type: Enhancement"
+    name: "nenhancements"
   - filter: "^Type: SDLKfjhsdlkfh"
     order:
       - "A"
       - "B"
       - "C"
+    name: awfulness
   - filter: "^.*$"
 "###;
 

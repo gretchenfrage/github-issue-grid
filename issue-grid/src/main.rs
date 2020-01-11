@@ -17,6 +17,7 @@ extern crate regex;
 use crate::{
     repo::{Repo, RepoMutex},
     config::Config,
+    model::{IssueSummary, BinSummary},
 };
 use std::{
     env,
@@ -73,14 +74,14 @@ fn root() -> Redirect {
 }
 
 #[get("/api/list_issues")]
-fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<model::IssueSummary>> {
+fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<IssueSummary>> {
     let repo = repo_lock.read();
 
     resp(repo.issues.clone())
 }
 
 #[get("/api/bin_issues")]
-fn bin_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<Vec<model::IssueSummary>>> {
+fn bin_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<BinSummary>> {
     let repo = repo_lock.read();
 
     resp(repo.issue_bins.clone())

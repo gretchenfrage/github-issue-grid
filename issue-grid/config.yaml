@@ -2,9 +2,12 @@ auth_var: GITHUB_TOKEN
 repo: gretchenfrage/reflex
 bins:
   - filter: "^Type: Enhancement"
+    name: aaa
   - filter: "^Type: SDLKfjhsdlkfh"
+    name: bbb
     order:
       - "A"
       - "B"
       - "C"
   - filter: "^.*$"
+    name: whatevs

@@ -1,6 +1,9 @@
 
 use super::{Conv, Remodel};
-use crate::sort::PatternList;
+use crate::{
+    sort::PatternList,
+    model::Color,
+};
 use github_issues_export_lib::prelude::*;
 use failure::{Error, format_err};
 use regex::Regex;
@@ -17,6 +20,8 @@ pub mod fr {
     pub struct BinConfig {
         pub filter: String,
         pub order: Option<Vec<String>>,
+        pub name: Option<String>,
+        pub color: Option<String>,
     }
 }
 use crate::config as to;
@@ -51,11 +56,15 @@ remodel! {
         let fr::BinConfig {
             filter,
             order,
+            name,
+            color,
         } = from;
 
         let tuple = (
             conv(filter)?,
             to::BinConfig {
+                name,
+                color: color.map(Color),
                 sort: order.map(conv).transpose()?,
             }
         );
