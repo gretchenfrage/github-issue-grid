@@ -21,7 +21,7 @@ pub struct IssueSortInstr {
 }
 
 serde_as_list! {
-        struct IssueSortInstr;
-        field regex;
-        option_tail order;
-    }
+    struct IssueSortInstr;
+    field regex;
+    option_tail order;
+}
