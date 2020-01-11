@@ -36,6 +36,7 @@ use rocket_contrib::{
     serve::StaticFiles,
 };
 use rocket_cache_response::CacheResponse;
+use failure::Error;
 
 /// Serde utility macros.
 #[macro_use]
@@ -65,6 +66,7 @@ pub fn resp<R: Serialize>(inner: R) -> Resp<R> {
     CacheResponse::NoCache(Json(inner))
 }
 
+
 #[get("/")]
 fn root() -> Redirect {
     Redirect::to("/static/index.html")
@@ -77,23 +79,36 @@ fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<model::IssueSummary>> {
     resp(repo.issues.clone())
 }
 
-fn main() {
-    /*let config = Config::new();
-    let repo = Repo::fetch(&config).unwrap();
+#[get("/api/bin_issues")]
+fn bin_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<Vec<model::IssueSummary>>> {
+    let repo = repo_lock.read();
+
+    resp(repo.issue_bins.clone())
+}
+
+
+fn try_main() -> Result<!, Error> {
+    let base = env::var("CARGO_MANIFEST_DIR").ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."));
+
+    let config = Config::from_file(base.join("config.yaml"))?;
+    let repo = Repo::fetch(&config)?;
     let repo_lock = RepoMutex::new(repo);
 
-    let path = env::var("CARGO_MANIFEST_DIR").ok()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("static");
-
-    rocket::ignite()
+    let err = rocket::ignite()
         .manage(config)
         .manage(repo_lock)
-        .mount("/static", StaticFiles::from(path))
+        .mount("/static", StaticFiles::from(base.join("static")))
         .mount("/", routes!(
             root,
             list_issues,
+            bin_issues,
         ))
-        .launch();*/
+        .launch();
+    Err(Error::from(err))
+}
+
+fn main() {
+    try_main().unwrap();
 }

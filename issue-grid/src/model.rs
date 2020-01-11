@@ -1,4 +1,7 @@
 
+use crate::sort::RegexMatch;
+use regex::Regex;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IssueSummary {
     pub id: u64,
@@ -29,3 +32,12 @@ pub struct Color(
     // valid CSS color, includes the pound.
     pub String
 );
+
+// == impls ==
+
+impl RegexMatch for IssueSummary {
+    fn is_match(&self, regex: &Regex) -> bool {
+        self.labels.iter()
+            .any(|label| regex.is_match(&label.name))
+    }
+}

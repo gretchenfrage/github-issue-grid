@@ -1,0 +1,10 @@
+auth_var: GITHUB_TOKEN
+repo: gretchenfrage/reflex
+bins:
+  - filter: "^Type: Enhancement"
+  - filter: "^Type: SDLKfjhsdlkfh"
+    order:
+      - "A"
+      - "B"
+      - "C"
+  - filter: "^.*$"

@@ -87,6 +87,14 @@ impl<'a, E, M: Clone> Binned<E, &'a M> {
     }
 }
 
+impl<E, M> Binned<E, M> {
+    pub fn into_iter(self) -> impl Iterator<Item=(Vec<E>, Option<M>)> {
+        self.bins.into_iter()
+            .map(|(bin, meta)| (bin, Some(meta)))
+            .chain(Some((self.overflow, None)))
+    }
+}
+
 impl<M> FromIterator<(Regex, M)> for PatternList<M> {
     fn from_iter<T: IntoIterator<Item=(Regex, M)>>(iter: T) -> Self {
         PatternList {
