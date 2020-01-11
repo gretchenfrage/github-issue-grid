@@ -42,12 +42,15 @@ use rocket_contrib::{
 };
 use rocket_cache_response::CacheResponse;
 
-/// Conversions between HTTP resource models.
-pub mod remodel;
-
 /// Serde utility macro.
 #[macro_use]
 pub mod serde_util;
+
+/// Conversions between HTTP resource models.
+pub mod remodel;
+
+/// Issue sorting.
+pub mod sort;
 
 #[get("/")]
 fn root() -> Redirect {
