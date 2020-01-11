@@ -1,7 +1,37 @@
 
-use crate::model;
-use github_issues_export_lib::model as gh;
 
+pub trait Remodel<B> {
+    type Result;
+}
+
+pub trait Conv<A, B>
+where
+    Self: Remodel<B>
+{
+    fn conv(from: A) -> Self::Result;
+}
+
+pub trait ConvInto<Remodel, B>
+where
+    Self: Sized,
+    Remodel: Conv<Self, B>/* + Remodel<B>*/,
+{
+    fn conv_into(self) -> Remodel::Result;
+}
+
+impl<Remodel, A, B> ConvInto<Remodel, B> for A
+where
+    A: Sized,
+    Remodel: Conv<A, B>,
+{
+    fn conv_into(self) -> Remodel::Result {
+        Remodel::conv(self)
+    }
+}
+
+
+
+/*
 // ==== traits ====
 
 pub trait FromGithub<T>: Sized {
@@ -62,3 +92,4 @@ impl FromGithub<gh::Issue> for model::IssueSummary {
         }
     }
 }
+*/

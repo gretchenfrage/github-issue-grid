@@ -1,4 +1,6 @@
 
+#![allow(unused_macros)]
+
 macro_rules! serde_as_list {
     (
     struct $struct:ident;
