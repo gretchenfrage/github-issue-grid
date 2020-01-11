@@ -77,9 +77,8 @@ fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<model::IssueSummary>> {
     resp(repo.issues.clone())
 }
 
-
 fn main() {
-    let config = Config::new();
+    /*let config = Config::new();
     let repo = Repo::fetch(&config).unwrap();
     let repo_lock = RepoMutex::new(repo);
 
@@ -96,5 +95,5 @@ fn main() {
             root,
             list_issues,
         ))
-        .launch();
+        .launch();*/
 }

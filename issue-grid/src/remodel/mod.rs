@@ -1,6 +1,6 @@
 
+use crate::sort::PatternList;
 use std::iter::FromIterator;
-
 
 #[macro_use]
 pub mod remodel_macro;
@@ -31,21 +31,23 @@ where
 // == conversion implementations elevate to collections ==
 
 macro_rules! conv_collection {
-    ($Col:ident)=>{
-        impl<A, B, C> Conv<$Col<A>, $Col<B>> for C
+    ($From:ident -> $To:ident)=>{
+        impl<A, B, C> Conv<$From<A>, $To<B>> for C
         where
             C: Conv<A, B>,
-            C: Remodel<$Col<B>>,
-            <C as Remodel<$Col<B>>>::Result: FromIterator<<C as Remodel<B>>::Result>
+            C: Remodel<$To<B>>,
+            <C as Remodel<$To<B>>>::Result: FromIterator<<C as Remodel<B>>::Result>
         {
-            fn conv(from: $Col<A>) -> Self::Result {
+            fn conv(from: $From<A>) -> Self::Result {
                 from.into_iter()
                     .map(C::conv)
                     .collect()
             }
         }
     };
+    ($Col:ident)=>{ conv_collection! { $Col -> $Col } };
 }
 
 conv_collection!(Vec);
 conv_collection!(Option);
+conv_collection!(Vec -> PatternList);

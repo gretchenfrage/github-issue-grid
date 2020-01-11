@@ -1,20 +1,76 @@
 
+use crate::{
+    sort::PatternList
+};
+use std::{
+    str::FromStr,
+    path::Path,
+    fs,
+};
 use github_issues_export_lib::prelude::*;
+use failure::Error;
 
 /// Server config.
+#[derive(Debug, Clone)]
 pub struct Config {
     pub auth: GithubAuth,
     pub repo: RepoLocation,
+    pub bins: PatternList<BinConfig>,
+}
+
+#[derive(Debug, Clone)]
+pub struct BinConfig {
+    pub sort: Option<PatternList<()>>,
+}
+
+impl FromStr for Config {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use crate::remodel::{
+            Conv,
+            config::{
+                fr::Config as ConfigModel,
+                Config as ConfigRemodel,
+            },
+        };
+
+        // 1. deserialize
+        let model: ConfigModel = serde_yaml::from_str(s)?;
+
+        // 2. convert
+        let config: Config = ConfigRemodel::conv(model)?;
+
+        Ok(config)
+    }
 }
 
 impl Config {
-    pub fn new() -> Self {
-        let auth = GithubAuth::from_env("GITHUB_TOKEN").unwrap();
-        let repo = RepoLocation::new("gretchenfrage", "reflex");
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        // 1. read
+        let string = fs::read_to_string(path)?;
 
-        Config {
-            auth,
-            repo,
-        }
+        // 2. parse
+        Self::from_str(&string)
     }
+}
+
+#[cfg(test)]
+static EXAMPLE_CFG_YAML: &str = r###"
+auth_var: GITHUB_TOKEN
+repo: gretchenfrage/reflex
+bins:
+  - filter: "^Type: Enhancement"
+  - filter: "^Type: SDLKfjhsdlkfh"
+    order:
+      - "A"
+      - "B"
+      - "C"
+  - filter: "^.*$"
+"###;
+
+#[test]
+fn cfg_parse_test() {
+    let cfg = Config::from_str(EXAMPLE_CFG_YAML).unwrap();
+    println!("{:#?}", cfg);
 }

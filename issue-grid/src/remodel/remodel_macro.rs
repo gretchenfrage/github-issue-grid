@@ -2,7 +2,7 @@
 macro_rules! remodel {
     (
     $(#[$docs:meta])*
-    type $remodel:ident remodels ($T:ident) -> ($Result:ident);
+    type $remodel:ident remodels ($T:ident) -> ($($Result:tt)*);
 
     $(
     ($from:ident : $A:ty) -> $B:ty $body:block
@@ -19,7 +19,7 @@ macro_rules! remodel {
         }
 
         impl<$T> Remodel<$T> for $remodel {
-            type Result = $Result;
+            type Result = $($Result)*;
         }
 
         $(

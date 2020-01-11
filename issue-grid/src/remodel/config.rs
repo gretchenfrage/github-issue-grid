@@ -1,27 +1,86 @@
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConfigFile {
-    // in the user/repo notation
-    pub repo: String,
-    pub organize: Vec<OrganizeInstr>
-}
+use super::{Conv, Remodel};
+use crate::sort::PatternList;
+use github_issues_export_lib::prelude::*;
+use failure::{Error, format_err};
+use regex::Regex;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum OrganizeInstr {
-    #[serde(rename = "bin")]
-    Bin(IssueSortInstr),
-    #[serde(rename = "sort")]
-    Sort(IssueSortInstr),
-}
+pub mod fr {
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct Config {
+        pub auth_var: String,
+        pub repo: String,
+        pub bins: Vec<BinConfig>,
+    }
 
-#[derive(Debug, Clone)]
-pub struct IssueSortInstr {
-    regex: String,
-    order: Option<Vec<String>>,
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct BinConfig {
+        pub filter: String,
+        pub order: Option<Vec<String>>,
+    }
 }
+use crate::config as to;
 
-serde_as_list! {
-    struct IssueSortInstr;
-    field regex;
-    option_tail order;
+remodel! {
+    type Config remodels (T) -> (Result<T, Error>);
+
+    (from: String) -> Regex {
+        Regex::new(&from).map_err(Error::from)
+    }
+
+    (from: String) -> RepoLocation {
+        let parts: Vec<&str> = from.split("/").collect();
+        match parts.as_slice() {
+            &[user, repo] => Ok(
+                RepoLocation::new(user, repo)
+            ),
+            _ => Err(
+                format_err!("invalid repository: {:?}", from)
+            ),
+        }
+    }
+
+    (from: Vec<String>) -> PatternList<()> {
+        from.into_iter()
+            .map(|pat| conv(pat)
+                .map(|regex: Regex| (regex, ())))
+            .collect::<Result<PatternList<()>, Error>>()
+    }
+
+    (from: fr::BinConfig) -> (Regex, to::BinConfig) {
+        let fr::BinConfig {
+            filter,
+            order,
+        } = from;
+
+        let tuple = (
+            conv(filter)?,
+            to::BinConfig {
+                sort: order.map(conv).transpose()?,
+            }
+        );
+        Ok(tuple)
+    }
+
+    (from: fr::Config) -> to::Config {
+        let fr::Config {
+            auth_var,
+            repo,
+            bins,
+        } = from;
+
+        let auth = GithubAuth::from_env(&auth_var)
+            .map_err(|e| format_err!("{}", e))?;
+
+        let bins = bins.into_iter()
+            .map(conv)
+            .collect::<Result<PatternList<to::BinConfig>, Error>>()?;
+
+        let cfg = to::Config {
+            auth,
+            repo: conv(repo)?,
+            bins,
+        };
+        Ok(cfg)
+    }
 }
