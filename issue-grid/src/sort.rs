@@ -1,13 +1,16 @@
 
 use std::{
     collections::HashSet,
-    fmt::Arguments,
+    fmt::{Arguments, Debug},
     slice,
 };
 
 use regex::Regex;
 
 // == instructions ==
+
+/// Definition for binning and sorting issues.
+pub type OrganizeDefinition = OrganizeScope;
 
 /// Recursive definition for binning and sorting issues.
 #[derive(Debug, Clone)]
@@ -27,7 +30,7 @@ pub enum SortTarget {
 pub struct FilterSort {
     pub filter: Regex,
     /// Optional explicit ordering.
-    pub sorter: Option<PatternOrder>,
+    pub sorter: Option<PatternSequence>,
 }
 
 /// A sequence of elements which can order elements by its first
@@ -151,7 +154,7 @@ impl OrganizeScope {
                 &SortTarget::Bin => {
 
                     let bin: Vec<(T, FirstMatchStack)> = elems.iter()
-                        .filter(|&elem| elem.is_match(filter))
+                        .filter(|&elem| elem.is_match(curr_filter))
                         .cloned()
                         .map(|elem| {
                             let ord =

@@ -36,28 +36,27 @@ pub mod cfg_model {
         pub auth_var: String,
         // in the user/repo notation
         pub repo: String,
-        pub organize: Vec<OrganizeInstr>
+        pub organize: Vec<OrganizeScopeElem>
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
-    pub enum OrganizeInstr {
-        #[serde(rename = "bin")]
-        Bin(IssueSortInstr),
-        #[serde(rename = "sort")]
-        Sort(IssueSortInstr),
-    }
-
-    #[derive(Debug, Clone)]
-    pub struct IssueSortInstr {
-        pub regex: String,
+    pub struct OrganizeScopeElem {
+        pub filter: Option<String>,
         pub order: Option<Vec<String>>,
+        pub target: Target,
     }
 
-    serde_as_list! {
-        struct IssueSortInstr;
-        field regex;
-        option_tail order;
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[serde(untagged)]
+    pub enum Target {
+        Bin(Bin),
+        SubScope1(Box<OrganizeScopeElem>),
+        SubScopeN(Vec<OrganizeScopeElem>),
     }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct Bin;
+    serde_string_literal!(Bin = "bin");
 }
 
 // ==== traits ====
@@ -119,6 +118,48 @@ impl<S: AsRef<str>> ParseCfg<S> for Regex {
     }
 }
 
+impl ParseCfg<Vec<String>> for sort::PatternSequence {
+    fn parse_cfg(old: Vec<String>) -> Result<Self, ()> {
+        Ok(sort::PatternSequence {
+            patterns: old.cfg_parse()?
+        })
+    }
+}
+
+impl ParseCfg<cfg_model::OrganizeScopeElem> for (sort::FilterSort, sort::SortTarget) {
+    fn parse_cfg(old: cfg_model::OrganizeScopeElem) -> Result<Self, ()> {
+
+        let filter: Regex = old.filter
+            .map(String::as_str)
+            .unwrap_or(".*")
+            .cfg_parse()?;
+        let sorter: Option<sort::PatternSequence> = old.order.cfg_parse()?;
+
+        let sort_target: sort::SortTarget = match old.target {
+            cfg_model::Target::Bin(cfg_model::Bin) => {
+                sort::SortTarget::Bin
+            }
+            cfg_model::Target::SubScope1(elem) => {
+                sort::SortTarget::Recurse(vec![elem].cfg_parse()?)
+            },
+            cfg_model::Target::SubScopeN(elem) => {
+                sort::SortTarget::Recurse(elem.cfg_parse()?)
+            }
+        };
+
+        Ok((sort::FilterSort { filter, sorter }, sort_target))
+    }
+}
+
+impl ParseCfg<Vec<cfg_model::OrganizeScopeElem>> for sort::OrganizeScope {
+    fn parse_cfg(old: Vec<cfg_model::OrganizeScopeElem>) -> Result<Self, ()> {
+        Ok(sort::OrganizeScope {
+            targets: old.cfg_parse()?
+        })
+    }
+}
+
+/*
 impl ParseCfg<cfg_model::IssueSortInstr> for sort::FilterSort {
     fn parse_cfg(old: cfg_model::IssueSortInstr) -> Result<Self, ()> {
         Ok(sort::FilterSort {
@@ -153,6 +194,7 @@ impl ParseCfg<cfg_model::ConfigFile> for Config {
         })
     }
 }
+*/
 
 #[cfg(test)]
 const TEST_CFG_YAML: &'static str = r#####"

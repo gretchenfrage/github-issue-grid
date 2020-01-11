@@ -16,9 +16,9 @@ extern crate serde_yaml;
 extern crate regex;
 
 use crate::{
-    sort::OrganizeInstr,
     remodel::GithubInto,
     cfg_parse::read_config,
+    sort::{OrganizeScope, RegexTest},
 };
 
 use std::{
@@ -76,7 +76,7 @@ pub fn resp<R: Serialize>(inner: R) -> Resp<R> {
 pub struct Config {
     pub auth: GithubAuth,
     pub repo: RepoLocation,
-    pub organize: Vec<OrganizeInstr>,
+    pub organize: OrganizeScope,
 }
 
 /// Convenience wrapper.

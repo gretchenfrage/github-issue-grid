@@ -1,4 +1,52 @@
 
+/// Declare a type which serdes as a literal.
+macro_rules! serde_string_literal {
+    ($struct:ty = $lit:expr)=>{
+        impl serde::Serialize for $struct {
+            fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                s.serialize_str($lit)
+            }
+        }
+
+        impl<'de> serde::Deserialize<'de> for $struct {
+            fn deserialize<D>(d: D) -> Result<Self, D::Error>
+            where
+                D: serde::de::Deserializer<'de>
+            {
+                use serde::de::{Visitor, Error};
+                use std::fmt::{self, Formatter};
+
+                struct V;
+                impl<'de2> Visitor<'de2> for V {
+                    type Value = $struct;
+
+                    fn expecting(&self, f: &mut Formatter) -> fmt::Result {
+                        f.write_str(&format!(
+                            "string literal {:?}", $lit
+                        ));
+                    }
+
+                    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+                    where
+                        E: Error
+                    {
+                        if s == $lit {
+                            Ok(<$struct as Default>::default())
+                        } else {
+                            E::custom(&format!(
+                                "expected {:?}, received {:?}", $lit, s
+                            ))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 macro_rules! serde_as_list {
     (
     struct $struct:ident;
