@@ -49,5 +49,27 @@ macro_rules! conv_collection {
 }
 
 conv_collection!(Vec);
-conv_collection!(Option);
 conv_collection!(Vec -> PatternList);
+
+pub trait FromOption<T>: Sized {
+    fn from_option(from: Option<T>) -> Self;
+}
+
+impl<T> FromOption<T> for Option<T> {
+    fn from_option(from: Option<T>) -> Self { from }
+}
+
+impl<I, E> FromOption<Result<I, E>> for Result<Option<I>, E> {
+    fn from_option(from: Option<Result<I, E>>) -> Self { from.transpose() }
+}
+
+impl<A, B, C> Conv<Option<A>, Option<B>> for C
+where
+    C: Conv<A, B>,
+    C: Remodel<Option<B>, Result=Option<B>>,
+    <C as Remodel<Option<B>>>::Result: FromOption<<C as Remodel<B>>::Result>
+{
+    fn conv(from: Option<A>) -> Self::Result {
+        Self::Result::from_option(from.map(C::conv))
+    }
+}

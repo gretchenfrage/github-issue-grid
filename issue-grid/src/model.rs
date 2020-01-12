@@ -4,10 +4,11 @@ use regex::Regex;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IssueSummary {
-    pub id: u64,
+    pub number: u64,
     pub hyperlink: String,
     pub title: String,
     pub labels: Vec<Label>,
+    pub creator: User,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

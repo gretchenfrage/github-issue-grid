@@ -29,10 +29,11 @@ remodel! {
 
     (from: fr::Issue) -> to::IssueSummary {
         to::IssueSummary {
-            id: from.id,
+            number: from.number,
             hyperlink: from.html_url,
             title: from.title,
             labels: conv(from.labels),
+            creator: conv(from.user),
         }
     }
 }

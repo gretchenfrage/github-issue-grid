@@ -1,7 +1,7 @@
 auth_var: GITHUB_TOKEN
-repo: gretchenfrage/reflex
+repo: correlation-one/c1
 bins:
-  - filter: "^Type: Enhancement"
+  - filter: "^Category: Enhancement"
     name: aaa
   - filter: "^Type: SDLKfjhsdlkfh"
     name: bbb

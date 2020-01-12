@@ -1,15 +1,120 @@
 
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <link rel="stylesheet" href="./style.css">
+</head>
 <body>
 
 <script src="https://redom.js.org/redom.min.js"></script>
 <script>
-  import { el, mount } from "redom";
 
+  const { el, router, mount, text, list, } = redom;
+
+  class UserIcon {
+    constructor(user) {
+      this.el = el('img.user-icon', {
+        src: user.icon_url
+      });
+    }
+  }
+
+  class LabelBadge {
+    constructor() {
+      this.el = el('span.label-badge');
+    }
+
+    update(label) {
+      this.el.textContent = label.name;
+      this.el.style['background-color'] = label.color;
+    }
+  }
+
+  class IssuePane {
+    constructor(issue) {
+      this.labels = list('div.label-list', LabelBadge);
+    }
+
+    update(issue) {
+      this.labels.update(issue.labels);
+
+      this.el = el('div.issue-pane', [
+        el('h4.issue-pane-header', [
+          new UserIcon(issue.creator),
+          el(
+            'span.issue-pane-number',
+            `#${issue.number}`
+          ),
+          el(
+            'span.issue-pane-title',
+            `${issue.title}`
+
+          ),
+        ]),
+        this.labels
+      ]);
+    }
+  }
+
+  class IssueBin {
+    constructor() {
+      this.el_issues = list('div.issue-bin', IssuePane);
+      this.el = this.el_issues;
+    }
+
+    update(bin) {
+      this.el_issues.update(bin.issues);
+    }
+  }
+
+  class IssueGrid {
+    constructor() {
+      this.el_bins = list('div.issue-grid', IssueBin);
+      this.el = this.el_bins;
+    }
+
+    update(bins) {
+      this.el_bins.update(bins);
+    }
+  }
+
+  function main() {
+    fetch('/api/bin_issues')
+      .then(resp => resp.json())
+      .then(data => {
+
+        let grid = new IssueGrid();
+        grid.update(data);
+        mount(document.body, grid);
+
+        /*
+        console.log(data);
+        let issue = data[2].issues[0];
+        console.log(issue);
+
+        let demo = new IssuePane(issue);
+        mount(document.body, demo);
+        */
+      });
+
+    //let demo = new IssuePane()
+
+    /*
+    let app = router('.app', {
+      home: text('yes'),
+      about: text('no'),
+      contact: text('maybe')
+    });
+
+    mount(document.body, app);
+
+    app.update('home');
+    app.update('about');
+    */
+  }
+  main();
 
 </script>
-alsdb
 
 </body>
 </html>
