@@ -1,5 +1,6 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(trace_macros)]
+#![feature(vec_remove_item)]
 
 extern crate github_issues_export_lib;
 #[macro_use]
@@ -63,7 +64,7 @@ pub mod repo;
 pub type Resp<R> = CacheResponse<Json<R>>;
 
 /// No-cache JSON response wrapper function.
-pub fn resp<R: Serialize>(inner: R) -> Resp<R> {
+pub fn resp_wrap<R: Serialize>(inner: R) -> Resp<R> {
     CacheResponse::NoCache(Json(inner))
 }
 
@@ -77,16 +78,27 @@ fn root() -> Redirect {
 fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<IssueSummary>> {
     let repo = repo_lock.read();
 
-    resp(repo.issues.clone())
+    resp_wrap(repo.issues.clone())
 }
 
-#[get("/api/bin_issues")]
-fn bin_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<BinSummary>> {
+#[get("/api/bin_issues?<remove_main_labels>")]
+fn bin_issues(repo_lock: State<RepoMutex>, remove_main_labels: bool) -> Resp<Vec<BinSummary>> {
     let repo = repo_lock.read();
+    let mut resp = repo.issue_bins.clone();
 
-    resp(repo.issue_bins.clone())
+    // process query params
+    if remove_main_labels {
+        for bin in &mut resp {
+            if let Some(main_label) = bin.main_label.clone() {
+                for issue in &mut bin.issues {
+                    issue.labels.remove_item(&main_label);
+                }
+            }
+        }
+    }
+
+    resp_wrap(resp)
 }
-
 
 fn try_main() -> Result<!, Error> {
     let base = env::var("CARGO_MANIFEST_DIR").ok()

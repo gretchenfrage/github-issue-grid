@@ -129,7 +129,7 @@
   }
 
   function main() {
-    fetch('/api/bin_issues')
+    fetch('/api/bin_issues?remove_main_labels=true')
       .then(resp => resp.json())
       .then(data => {
         let grid = new IssueGrid(data);

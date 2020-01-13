@@ -2,7 +2,7 @@
 use crate::sort::RegexMatch;
 use regex::Regex;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct IssueSummary {
     pub number: u64,
     pub hyperlink: String,
@@ -11,13 +11,13 @@ pub struct IssueSummary {
     pub creator: User,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Label {
     pub name: String,
     pub color: Color,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct BinSummary {
     pub name: Option<String>,
     pub color: Option<Color>, // currently ignored
@@ -26,7 +26,7 @@ pub struct BinSummary {
     pub is_overflow: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub id: u64,
     pub name: String,
@@ -34,7 +34,7 @@ pub struct User {
     pub hyperlink: String,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(transparent)]
 pub struct Color(
     // valid CSS color, includes the pound.
