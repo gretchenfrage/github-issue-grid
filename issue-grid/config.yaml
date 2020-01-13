@@ -1,13 +1,18 @@
 auth_var: GITHUB_TOKEN
 repo: correlation-one/c1
 bins:
-  - filter: "^Category: Enhancement"
-    name: aaa
-  - filter: "^Type: SDLKfjhsdlkfh"
-    name: bbb
-    order:
-      - "A"
-      - "B"
-      - "C"
-  - filter: "^.*$"
-    name: whatevs
+  - filter: "^category: enhancement"
+  - filter: "^category: bug"
+  - filter: "^category: meta"
+  - filter: "^category: question"
+
+# - filter: "^Category: Enhancement"
+#   name: aaa
+# - filter: "^Type: SDLKfjhsdlkfh"
+#   name: bbb
+#   order:
+#     - "A"
+#     - "B"
+#     - "C"
+# - filter: "^.*$"
+#   name: whatevs

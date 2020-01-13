@@ -9,38 +9,65 @@
 <script src="https://redom.js.org/redom.min.js"></script>
 <script>
 
-  const { el, router, mount, text, list, } = redom;
+  const { el, router, mount, text, list, setAttr, setStyle, } = redom;
 
-  class UserIcon {
+  class Avatar {
     constructor(user) {
-      this.el = el('img.user-icon', {
-        src: user.icon_url
-      });
+      this.el = el('img.user-icon');
+      user && this.update(user);
+    }
+
+    update(user) {
+      setAttr(this.el, { src: user.icon_url });
     }
   }
 
-  class LabelBadge {
-    constructor() {
-      this.el = el('span.label-badge');
+  class Label {
+    constructor(label) {
+      this.el = el('span.label');
+      label && this.update(label);
     }
 
     update(label) {
       this.el.textContent = label.name;
-      this.el.style['background-color'] = label.color;
+      setStyle(this.el, { 'background-color': label.color });
     }
   }
 
-  class IssuePane {
+  class Issue {
     constructor(issue) {
-      this.labels = list('div.label-list', LabelBadge);
+      this.labels = list('div.label-list', Label);
+      this.creator = new Avatar();
+      this.number = el('span.issue-number');
+      this.title = el('span.issue-name');
+
+      this.el = el('div.issue', [
+        el('h4.issue-h4', [
+          this.creator,
+          this.number,
+          text(' '),
+          this.title,
+        ]),
+
+        this.labels,
+      ]);
+
+      issue && this.update(issue);
     }
 
     update(issue) {
       this.labels.update(issue.labels);
+      this.creator.update(issue.creator);
+
+      this.number.textContent = `#${issue.number}`;
+      this.title.textContent = issue.title;
+
+      /*
+      this.labels.update(issue.labels);
 
       this.el = el('div.issue-pane', [
         el('h4.issue-pane-header', [
-          new UserIcon(issue.creator),
+          new Avatar(issue.creator),
           el(
             'span.issue-pane-number',
             `#${issue.number}`
@@ -53,12 +80,13 @@
         ]),
         this.labels
       ]);
+      */
     }
   }
 
   class IssueBin {
     constructor() {
-      this.el_issues = list('div.issue-bin', IssuePane);
+      this.el_issues = list('div.issue-bin', Issue);
       this.el = this.el_issues;
     }
 
@@ -70,7 +98,7 @@
   class IssueGrid {
     constructor() {
       this.el_bins = list('div.issue-grid', IssueBin);
-      this.el = this.el_bins;
+      this.el = el('div.issue-grid-wrapper', this.el_bins);
     }
 
     update(bins) {
@@ -82,7 +110,7 @@
     fetch('/api/bin_issues')
       .then(resp => resp.json())
       .then(data => {
-
+        data = data.slice(0, 2);
         let grid = new IssueGrid();
         grid.update(data);
         mount(document.body, grid);
@@ -92,12 +120,12 @@
         let issue = data[2].issues[0];
         console.log(issue);
 
-        let demo = new IssuePane(issue);
+        let demo = new Issue(issue);
         mount(document.body, demo);
         */
       });
 
-    //let demo = new IssuePane()
+    //let demo = new Issue()
 
     /*
     let app = router('.app', {
