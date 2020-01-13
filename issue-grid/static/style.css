@@ -28,7 +28,7 @@ body {
 .issue-pos, .issue {
   width: 3.5in;
   min-height: 0.1in;
-  margin: 10px;
+  margin: 10px 2.5px;
 }
 
 .issue-h4-pos, .issue-h4 {
@@ -80,23 +80,54 @@ body {
   margin: 4px;
 }
 
-.issue-bin {
-  margin: 1em;
-  height: 4in;
+.issue-bin-pos, .issue-bin {
+  margin: 6px;
+  padding: 6px;
+  height: calc(100% - 2rem);
   overflow-y: scroll;
-  border: 1px solid black;
   display: inline-block;
+  vertical-align: top;
   white-space: normal;
 }
 
-.issue-bin::-webkit-scrollbar {
-  width: 0 !important;
+.issue-bin-style, .issue-bin {
+  background-color: #e6e7ec;
+}
+.issue-bin-style::-webkit-scrollbar, .issue-bin::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.issue-bin-style::-webkit-scrollbar-thumb, .issue-bin::-webkit-scrollbar-thumb {
+  background: linear-gradient(#d3d5dc, #d3d5dc);
+  border-radius: 8px;
+}
+.issue-bin-style::-webkit-scrollbar-track, .issue-bin::-webkit-scrollbar-track {
+  background: linear-gradient(#00000000, #00000000);
 }
 
-.issue-grid {
-  background-color: darkolivegreen;
+.issue-grid-pos, .issue-grid {
   overflow-x: scroll;
+  overflow-y: hidden;
   white-space: nowrap;
+  position: absolute;
+  top: 0rem;
+  bottom: 0rem;
+  left: 0rem;
+  right: 0rem;
+  margin: 0;
+  padding: 0;
+}
+
+.issue-grid-style::-webkit-scrollbar, .issue-grid::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+.issue-grid-style::-webkit-scrollbar-thumb, .issue-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(#d3d5dc, #d3d5dc);
+  border-radius: 8px;
+}
+.issue-grid-style::-webkit-scrollbar-track, .issue-grid::-webkit-scrollbar-track {
+  background: linear-gradient(#00000000, #00000000);
 }
 
 /*# sourceMappingURL=style.css.map */

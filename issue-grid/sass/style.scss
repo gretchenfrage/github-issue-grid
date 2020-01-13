@@ -1,4 +1,6 @@
 
+@import "scrollnice";
+
 @font-face {
   font-family: Alegreya;
   src: url("./fonts/AlegreyaSans-Regular.woff2");
@@ -22,11 +24,9 @@ body {
 
 $issue-width: 3.5in;
 $comfy-margin: 4px;
+$issue-sidespace: 2.5px;
 
 .issue-style {
-  //padding: 3px;
-  //margin: 1em 0em;
-
   background-color: rgb(255, 255, 255);
   border: solid 1px rgb(218, 221, 227);
   box-shadow: 2px 2px 2px rgb(218, 221, 227);
@@ -38,7 +38,7 @@ $comfy-margin: 4px;
 .issue-pos {
   width: 3.5in;
   min-height: 0.1in;
-  margin: 10px;
+  margin: 10px $issue-sidespace;
 }
 
 .issue {
@@ -69,8 +69,6 @@ $comfy-margin: 4px;
   font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif,Apple Color Emoji,Segoe UI Emoji;
   font-size: 16px;
   font-weight: 300;
-  //margin: 4px;
-  //display: inline-block;
   color: rgb(70, 77, 86);
 
   // push the issue name away
@@ -84,8 +82,6 @@ $comfy-margin: 4px;
 
   // this is a hacky thing to prevent the image for going into margin space
   margin-right: $comfy-margin * 2;
-  //margin: 8px;
-  //box-shadow: 2px 2px 2px rgb(218, 221, 227);
 }
 
 .user-icon-style {
@@ -116,46 +112,55 @@ $comfy-margin: 4px;
 
 .label-list {
   margin: $comfy-margin;
-  //display: inline-block;
 }
 
-.issue-bin {
-  margin: 1em;
-  height: 4in;
-  overflow-y: scroll;
 
-  border: 1px solid black;
+.issue-bin-pos {
+  margin: 6px;
+  padding: 6px;
+  height: calc(100% - 2rem);
+  overflow-y: scroll;
   display: inline-block;
+  vertical-align: top;
 
   // undo the nowrap done by .issue-bin
   white-space: normal;
-
-  //width: 3.65in;
-  ////padding: 1em;
-  //height: 100%;
-  //overflow-y: scroll;
-  //background-color: rgb(244, 246, 248);
 }
 
-.issue-bin::-webkit-scrollbar {
-  width: 0 !important
+.issue-bin-style {
+  background-color: rgb(230, 231, 236);
 
+  @include scrollnice();
 }
 
+.issue-bin {
+  @extend .issue-bin-pos;
+  @extend .issue-bin-style;
+}
+
+
+
+.issue-grid-pos {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  white-space: nowrap;
+
+  position: absolute;
+  top:    0rem;
+  bottom: 0rem;
+  left:   0rem;
+  right:  0rem;
+
+  margin: 0;
+  padding: 0;
+}
+
+.issue-grid-style {
+  @include scrollnice();
+}
 
 .issue-grid {
-  background-color: darkolivegreen;
-  overflow-x: scroll;
-  //width: 100vw;
-  white-space: nowrap;
-//
-//  height: 100vh;
-//
-//  flex-basis: 3.8in;
-//  max-width: 10000000px;
-//
-//  overflow: hidden;
-//
-//  display: flex;
-//  flex-direction: row;
+  @extend .issue-grid-pos;
+  @extend .issue-grid-style;
 }
+

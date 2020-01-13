@@ -1,0 +1,16 @@
+
+@mixin scrollnice() {
+  &::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(rgb(211, 213, 220), rgb(211, 213, 220));
+    border-radius: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: linear-gradient(#00000000, #00000000);
+  }
+}
