@@ -9,7 +9,19 @@
 <script src="https://redom.js.org/redom.min.js"></script>
 <script>
 
-  const { el, router, mount, text, list, setAttr, setStyle, } = redom;
+  function has_tunnel(obj /*, level1, level2, ... levelN*/) {
+    var args = Array.prototype.slice.call(arguments, 1);
+
+    for (var i = 0; i < args.length; i++) {
+      if (!obj || !obj.hasOwnProperty(args[i])) {
+        return false;
+      }
+      obj = obj[args[i]];
+    }
+    return true;
+  }
+
+  const { el, router, mount, text, list, setAttr, setStyle, place, } = redom;
 
   class Avatar {
     constructor(user) {
@@ -64,14 +76,42 @@
     }
   }
 
+  class BinHeader {
+    constructor(bin) {
+      this.header = el('div.bin-header');
+      this.el = place(this.header);
+      bin && update(bin);
+    }
+
+    update(bin) {
+      if (bin.name) {
+        this.header.textContent = bin.name;
+        if (bin.main_label) {
+          setStyle(this.header, { 'background-color': bin.main_label.color });
+        }
+
+        this.el.update(true);
+      } else {
+        this.el.update(false);
+      }
+    }
+  }
+
   class IssueBin {
     constructor(bin) {
-      this.issues = list('div.issue-bin', Issue);
-      this.el = this.issues;
+      this.header = new BinHeader();
+      this.issues = list('div', Issue);
+
+      this.el = el('div.issue-bin', [
+        this.header,
+        this.issues,
+      ]);
+
       bin && this.update(bin);
     }
 
     update(bin) {
+      this.header.update(bin);
       this.issues.update(bin.issues);
     }
   }
@@ -92,35 +132,9 @@
     fetch('/api/bin_issues')
       .then(resp => resp.json())
       .then(data => {
-        data = data.slice(0, 2);
-        let grid = new IssueGrid();
-        grid.update(data);
+        let grid = new IssueGrid(data);
         mount(document.body, grid);
-
-        /*
-        console.log(data);
-        let issue = data[2].issues[0];
-        console.log(issue);
-
-        let demo = new Issue(issue);
-        mount(document.body, demo);
-        */
       });
-
-    //let demo = new Issue()
-
-    /*
-    let app = router('.app', {
-      home: text('yes'),
-      about: text('no'),
-      contact: text('maybe')
-    });
-
-    mount(document.body, app);
-
-    app.update('home');
-    app.update('about');
-    */
   }
   main();
 

@@ -110,10 +110,30 @@ $issue-sidespace: 2.5px;
   @extend .label-style;
 }
 
+.bin-header-pos {
+  // this is weird hackyness
+  width: $issue-width - ($comfy-margin * 2);
+  padding: $comfy-margin;
+  margin: $comfy-margin;
+  position: relative;
+  left: $comfy-margin;
+}
+
+.bin-header-style {
+  font-size: 21px;
+  text-align: center;
+  border-radius: 2px;
+  box-shadow: 2px 2px 2px gray;
+}
+
+.bin-header {
+  @extend .bin-header-pos;
+  @extend .bin-header-style;
+}
+
 .label-list {
   margin: $comfy-margin;
 }
-
 
 .issue-bin-pos {
   margin: 6px;

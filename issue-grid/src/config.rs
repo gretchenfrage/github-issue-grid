@@ -22,6 +22,7 @@ pub struct Config {
 #[derive(Debug, Clone)]
 pub struct BinConfig {
     pub name: Option<String>,
+    pub main_label: Option<String>,
     pub color: Option<Color>,
     pub sort: Option<PatternList<()>>,
 }

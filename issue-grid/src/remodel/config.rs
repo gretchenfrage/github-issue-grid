@@ -22,6 +22,7 @@ pub mod fr {
         pub order: Option<Vec<String>>,
         pub name: Option<String>,
         pub color: Option<String>,
+        pub main_label: Option<String>,
     }
 }
 use crate::config as to;
@@ -58,12 +59,14 @@ remodel! {
             order,
             name,
             color,
+            main_label,
         } = from;
 
         let tuple = (
             conv(filter)?,
             to::BinConfig {
                 name,
+                main_label,
                 color: color.map(Color),
                 sort: order.map(conv).transpose()?,
             }

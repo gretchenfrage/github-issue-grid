@@ -2,9 +2,20 @@ auth_var: GITHUB_TOKEN
 repo: correlation-one/c1
 bins:
   - filter: "^category: enhancement"
+    main_label: "category: enhancement"
+    name: "Enhancement"
+
   - filter: "^category: bug"
+    main_label: "category: bug"
+    name: "Bug"
+
   - filter: "^category: meta"
+    main_label: "category: meta"
+    name: "Meta"
+
   - filter: "^category: question"
+    main_label: "category: question"
+    name: "Question"
 
 # - filter: "^Category: Enhancement"
 #   name: aaa

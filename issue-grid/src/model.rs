@@ -20,7 +20,8 @@ pub struct Label {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BinSummary {
     pub name: Option<String>,
-    pub color: Option<Color>,
+    pub color: Option<Color>, // currently ignored
+    pub main_label: Option<Label>,
     pub issues: Vec<IssueSummary>,
     pub is_overflow: bool,
 }

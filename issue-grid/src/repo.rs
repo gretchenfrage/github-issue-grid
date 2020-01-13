@@ -1,7 +1,7 @@
 
 use crate::{
-    model::{IssueSummary, BinSummary},
-    config::{Config, BinConfig},
+    model::{IssueSummary, Label, BinSummary},
+    config::Config,
     remodel::{
         Conv,
         github::Github as GithubRemodel,
@@ -11,7 +11,6 @@ use github_issues_export_lib::{Github, IssueState};
 use std::{
     sync::RwLock,
     ops::{Deref, DerefMut},
-    borrow::Cow,
 };
 use failure::{Error, format_err};
 
@@ -19,6 +18,16 @@ use failure::{Error, format_err};
 pub struct Repo {
     pub issues: Vec<IssueSummary>,
     pub issue_bins: Vec<BinSummary>,
+}
+
+fn find_label<'a, I>(issues: I, name: &str) -> Option<Label>
+where
+    I: IntoIterator<Item=&'a IssueSummary>,
+{
+    issues.into_iter()
+        .flat_map(|issue| issue.labels.iter())
+        .find(|label| label.name == name)
+        .cloned()
 }
 
 impl Repo {
@@ -41,27 +50,36 @@ impl Repo {
         // bin
         let issue_bins = config.bins.bin(issues.clone(), true)
             .into_iter()
-            .map(|(issues, bin_cfg)| {
+            .map(|(bin_issues, bin_cfg)| {
                 // 1. sort
                 let sorter =
                     bin_cfg.and_then(|bin_cfg| bin_cfg.sort.as_ref());
-                let issues = match sorter  {
-                    Some(pat_list) => pat_list.sort(issues),
-                    None => issues,
+                let bin_issues = match sorter  {
+                    Some(pat_list) => pat_list.sort(bin_issues),
+                    None => bin_issues,
                 };
+
+
 
                 // 2. generate model
                 match bin_cfg {
-                    Some(bin_cfg) => BinSummary {
-                        name: bin_cfg.name.clone(),
-                        color: bin_cfg.color.clone(),
-                        issues,
-                        is_overflow: false,
+                    Some(bin_cfg) => {
+                        let main_label = bin_cfg.main_label.as_ref()
+                            .and_then(|label| find_label(&issues, label));
+
+                        BinSummary {
+                            name: bin_cfg.name.clone(),
+                            color: bin_cfg.color.clone(),
+                            main_label,
+                            issues: bin_issues,
+                            is_overflow: false,
+                        }
                     },
                     None => BinSummary {
                         name: None,
                         color: None,
-                        issues,
+                        main_label: None,
+                        issues: bin_issues,
                         is_overflow: true,
                     },
                 }
