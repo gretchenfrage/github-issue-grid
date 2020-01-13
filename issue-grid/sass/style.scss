@@ -127,8 +127,11 @@ $issue-sidespace: 2.5px;
   white-space: normal;
 }
 
+$issue-bin-background-color: rgb(230, 231, 236);
+
 .issue-bin-style {
-  background-color: rgb(230, 231, 236);
+  background-color: $issue-bin-background-color;
+  border-radius: 5px;
 
   @include scrollnice();
 }
@@ -137,8 +140,6 @@ $issue-sidespace: 2.5px;
   @extend .issue-bin-pos;
   @extend .issue-bin-style;
 }
-
-
 
 .issue-grid-pos {
   overflow-x: scroll;
@@ -156,6 +157,7 @@ $issue-sidespace: 2.5px;
 }
 
 .issue-grid-style {
+  background-color: rgb(245, 245, 245);
   @include scrollnice();
 }
 

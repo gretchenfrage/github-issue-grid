@@ -92,6 +92,7 @@ body {
 
 .issue-bin-style, .issue-bin {
   background-color: #e6e7ec;
+  border-radius: 5px;
 }
 .issue-bin-style::-webkit-scrollbar, .issue-bin::-webkit-scrollbar {
   width: 9px;
@@ -118,6 +119,9 @@ body {
   padding: 0;
 }
 
+.issue-grid-style, .issue-grid {
+  background-color: whitesmoke;
+}
 .issue-grid-style::-webkit-scrollbar, .issue-grid::-webkit-scrollbar {
   width: 9px;
   height: 9px;

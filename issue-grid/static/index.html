@@ -61,48 +61,30 @@
 
       this.number.textContent = `#${issue.number}`;
       this.title.textContent = issue.title;
-
-      /*
-      this.labels.update(issue.labels);
-
-      this.el = el('div.issue-pane', [
-        el('h4.issue-pane-header', [
-          new Avatar(issue.creator),
-          el(
-            'span.issue-pane-number',
-            `#${issue.number}`
-          ),
-          el(
-            'span.issue-pane-title',
-            `${issue.title}`
-
-          ),
-        ]),
-        this.labels
-      ]);
-      */
     }
   }
 
   class IssueBin {
-    constructor() {
-      this.el_issues = list('div.issue-bin', Issue);
-      this.el = this.el_issues;
+    constructor(bin) {
+      this.issues = list('div.issue-bin', Issue);
+      this.el = this.issues;
+      bin && this.update(bin);
     }
 
     update(bin) {
-      this.el_issues.update(bin.issues);
+      this.issues.update(bin.issues);
     }
   }
 
   class IssueGrid {
-    constructor() {
-      this.el_bins = list('div.issue-grid', IssueBin);
-      this.el = el('div.issue-grid-wrapper', this.el_bins);
+    constructor(bins) {
+      this.bins = list('div.issue-grid', IssueBin);
+      this.el = this.bins;
+      bins && this.update(bins);
     }
 
     update(bins) {
-      this.el_bins.update(bins);
+      this.bins.update(bins);
     }
   }
 
