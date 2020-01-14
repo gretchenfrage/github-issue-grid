@@ -226,3 +226,34 @@ $issue-bin-background-color: rgb(230, 231, 236);
   @extend .issue-grid-pos;
   @extend .issue-grid-style;
 }
+
+$page-header-height: 0.4in;
+$page-header-padding: 10px;
+
+.grid-box {
+  width: 100%;
+  height: calc(100% - #{$page-header-height + $page-header-padding * 2});
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.header-box-pos {
+  height: $page-header-height;
+  margin: 0;
+}
+
+.header-box-style {
+  background-color: #2c3e50;
+  padding: $page-header-padding 0.5in;
+}
+
+.header-box {
+  @extend .header-box-pos;
+  @extend .header-box-style;
+}
+
+.repo-name {
+  font-size: 24pt;
+  color: #eeeeee;
+}

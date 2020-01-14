@@ -162,9 +162,13 @@
 
   class PageHeader {
     constructor() {
-      
+      this.repo_name = el('a.repo-name');
+      this.el = el('div.header-box', [
+        this.repo_name,
+      ]);
 
-      this.el = text('aaaaa');
+      this.repo_name.textContent = 'correlation-one/c1';
+      setAttr(this.repo_name, { href: 'https://github.com/correlation-one/c1' });
     }
   }
 
@@ -175,7 +179,7 @@
 
       this.el = el('div.wh100', [
         this.header,
-        el('div.wh100.p-rel', this.grid),
+        el('div.grid-box', this.grid),
       ]);
 
       bins && this.update(bins);
