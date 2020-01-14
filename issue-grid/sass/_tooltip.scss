@@ -1,0 +1,22 @@
+
+.has-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+$transition-time: 0.085s;
+
+.has-tooltip .tooltip {
+  position: absolute;
+  z-index: 100;
+
+  transition: color $transition-time,
+              background-color $transition-time,
+              border-color $transition-time;
+}
+
+.has-tooltip:not(:hover) .tooltip {
+  color: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}

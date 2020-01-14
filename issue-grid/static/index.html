@@ -7,6 +7,7 @@
 <body>
 
 <script src="https://redom.js.org/redom.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script>
 
   function has_tunnel(obj /*, level1, level2, ... levelN*/) {
@@ -25,12 +26,38 @@
 
   class Avatar {
     constructor(user) {
-      this.el = el('img.user-icon');
+      this.el = el('div.user-icon.has-tooltip', [
+        (this.icon_link = el(
+          'a', (this.icon = el('img.user-icon'))
+        )),
+        (this.tooltip = el(
+          'div.user-icon-tooltip', (this.tooltip_link = el('a')))
+        ),
+      ]);
+
+      let state = { epoch: 0, delay: 85, tooltip: this.tooltip };
+      $(this.el).hover(() => {
+        // on hover
+        setStyle(state.tooltip, { visibility: 'visible' });
+        state.epoch++;
+      }, () => {
+        // on de-hover
+        let epoch = ++state.epoch;
+        window.setTimeout(() => {
+          if (state.epoch === epoch) {
+            setStyle(state.tooltip, { visibility: 'hidden' })
+          }
+        }, state.delay);
+      });
+
       user && this.update(user);
     }
 
     update(user) {
-      setAttr(this.el, { src: user.icon_url });
+      setAttr(this.icon, { src: user.icon_url });
+      setAttr(this.icon_link, { href: user.hyperlink });
+      setAttr(this.tooltip_link, { href: user.hyperlink });
+      this.tooltip_link.innerText = user.name;
     }
   }
 
@@ -56,9 +83,11 @@
       this.el = el('div.issue', [
         el('h4.issue-h4', [
           this.creator,
-          this.number,
-          text(' '),
-          this.title,
+          (this.issue_link = el('a', [
+            this.number,
+            text(' '),
+            this.title,
+          ]))
         ]),
 
         this.labels,
@@ -73,6 +102,8 @@
 
       this.number.textContent = `#${issue.number}`;
       this.title.textContent = issue.title;
+
+      setAttr(this.issue_link, { href: issue.hyperlink });
     }
   }
 

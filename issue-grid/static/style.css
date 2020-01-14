@@ -1,3 +1,20 @@
+.has-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.has-tooltip .tooltip, .has-tooltip .user-icon-tooltip-pos, .has-tooltip .user-icon-tooltip {
+  position: absolute;
+  z-index: 100;
+  transition: color 0.085s, background-color 0.085s, border-color 0.085s;
+}
+
+.has-tooltip:not(:hover) .tooltip, .has-tooltip:not(:hover) .user-icon-tooltip-pos, .has-tooltip:not(:hover) .user-icon-tooltip {
+  color: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+}
+
 @font-face {
   font-family: Alegreya;
   src: url("./fonts/AlegreyaSans-Regular.woff2");
@@ -15,6 +32,15 @@ body {
   margin: 0;
   padding: 0;
   font-family: Alegreya;
+}
+
+a {
+  text-decoration: inherit;
+  color: inherit;
+}
+
+a:hover {
+  text-decoration: underline;
 }
 
 .issue-style, .issue {
@@ -54,14 +80,27 @@ body {
 }
 
 .user-icon-pos, .user-icon {
-  width: 1.5em;
-  height: 1.5em;
+  width: 24px;
+  height: 24px;
   float: right;
   margin-right: 8px;
+  margin-left: 8px;
 }
 
 .user-icon-style, .user-icon {
   border-radius: 2.5px;
+}
+
+.user-icon-tooltip-pos, .user-icon-tooltip {
+  right: 32px;
+}
+
+.user-icon-tooltip-style, .user-icon-tooltip {
+  background-color: #111111bb;
+  color: white;
+  font-size: 12pt;
+  padding: 4px 10px;
+  border-radius: 1px;
 }
 
 .label-pos, .label {

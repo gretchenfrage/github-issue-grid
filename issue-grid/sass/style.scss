@@ -1,5 +1,6 @@
 
 @import "scrollnice";
+@import "tooltip";
 
 @font-face {
   font-family: Alegreya;
@@ -20,6 +21,15 @@ body {
   margin: 0;
   padding: 0;
   font-family: Alegreya;
+}
+
+a {
+  text-decoration: inherit;
+  color: inherit;
+}
+
+a:hover {
+  text-decoration: underline;
 }
 
 $issue-width: 3.5in;
@@ -75,13 +85,16 @@ $issue-sidespace: 2.5px;
   margin-right: $comfy-margin;
 }
 
+$user-icon-size: 24px;
+
 .user-icon-pos {
-  width: 1.5em;
-  height: 1.5em;
+  width: $user-icon-size;
+  height: $user-icon-size;
   float: right;
 
   // this is a hacky thing to prevent the image for going into margin space
   margin-right: $comfy-margin * 2;
+  margin-left: $comfy-margin * 2;
 }
 
 .user-icon-style {
@@ -91,6 +104,25 @@ $issue-sidespace: 2.5px;
 .user-icon {
   @extend .user-icon-pos;
   @extend .user-icon-style;
+}
+
+.user-icon-tooltip-pos {
+  @extend .tooltip;
+
+  right: $user-icon-size + $comfy-margin * 2;
+}
+
+.user-icon-tooltip-style {
+  background-color: #111111bb;
+  color: white;
+  font-size: 12pt;
+  padding: $comfy-margin $comfy-margin * 2.5;
+  border-radius: 1px;
+}
+
+.user-icon-tooltip {
+  @extend .user-icon-tooltip-pos;
+  @extend .user-icon-tooltip-style;
 }
 
 .label-pos {
