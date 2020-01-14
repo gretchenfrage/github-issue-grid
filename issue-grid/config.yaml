@@ -1,29 +1,38 @@
 auth_var: GITHUB_TOKEN
 repo: correlation-one/c1
-bins:
-  - filter: "^category: enhancement"
-    main_label: "category: enhancement"
-    name: "Enhancement"
+profiles:
+  - name: 'by category'
+    bins:
+      - filter: "^category: enhancement"
+        main_label: "category: enhancement"
+        name: "Enhancement"
 
-  - filter: "^category: bug"
-    main_label: "category: bug"
-    name: "Bug"
+      - filter: "^category: bug"
+        main_label: "category: bug"
+        name: "Bug"
 
-  - filter: "^category: meta"
-    main_label: "category: meta"
-    name: "Meta"
+      - filter: "^category: meta"
+        main_label: "category: meta"
+        name: "Meta"
 
-  - filter: "^category: question"
-    main_label: "category: question"
-    name: "Question"
+      - filter: "^category: question"
+        main_label: "category: question"
+        name: "Question"
 
-# - filter: "^Category: Enhancement"
-#   name: aaa
-# - filter: "^Type: SDLKfjhsdlkfh"
-#   name: bbb
-#   order:
-#     - "A"
-#     - "B"
-#     - "C"
-# - filter: "^.*$"
-#   name: whatevs
+  - name: 'by status'
+    bins:
+      - filter: '^status: help-wanted'
+        main_label: 'status: help-wanted'
+        name: 'Help Wanted'
+
+      - filter: '^status: ready-for-review'
+        main_label: 'status: ready-for-review'
+        main: 'Ready for Review'
+
+      - filter: '^status: work-in-progress'
+        main_label: 'status: work-in-progress'
+        name: 'In Progress'
+
+      - filter: '^status: blocked'
+        main_label: 'status: blocked'
+        name: 'Blocked'

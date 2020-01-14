@@ -18,7 +18,7 @@ extern crate regex;
 use crate::{
     repo::{Repo, RepoMutex},
     config::Config,
-    model::{IssueSummary, BinSummary},
+    model::{IssueSummary, BinSummary, ProfileMeta},
 };
 use std::{
     env,
@@ -31,6 +31,7 @@ use rocket::{
     State,
     response::{
         Redirect,
+        status::NotFound,
     },
 };
 use rocket_contrib::{
@@ -68,27 +69,66 @@ pub fn resp_wrap<R: Serialize>(inner: R) -> Resp<R> {
     CacheResponse::NoCache(Json(inner))
 }
 
-
 #[get("/")]
 fn root() -> Redirect {
     Redirect::to("/static/index.html")
 }
 
+#[get("/api/repo_name")]
+fn repo_name(config: State<Config>) -> Resp<String> {
+    resp_wrap(config.repo.to_string())
+}
+
+#[get("/api/repo_hyperlink")]
+fn repo_hyperlink(config: State<Config>) -> Resp<String> {
+    let url = format!(
+        "https://github.com/{}/{}",
+        config.repo.user,
+        config.repo.repo
+    );
+    resp_wrap(url)
+}
+
 #[get("/api/list_issues")]
 fn list_issues(repo_lock: State<RepoMutex>) -> Resp<Vec<IssueSummary>> {
     let repo = repo_lock.read();
-
     resp_wrap(repo.issues.clone())
 }
 
-#[get("/api/bin_issues?<remove_main_labels>")]
-fn bin_issues(repo_lock: State<RepoMutex>, remove_main_labels: bool) -> Resp<Vec<BinSummary>> {
+#[get("/api/list_profiles")]
+fn list_profiles(config: State<Config>) -> Resp<Vec<ProfileMeta>> {
+    let list = config.profiles.iter()
+        .enumerate()
+        .map(|(i, profile)| ProfileMeta {
+            name: profile.name.clone(),
+            number: i,
+        })
+        .collect();
+    resp_wrap(list)
+}
+
+#[get("/api/<profile_name>/bin_issues?<remove_main_labels>")]
+fn bin_issues(
+    config: State<Config>,
+    repo_lock: State<RepoMutex>,
+    profile_name: String,
+    remove_main_labels: bool,
+) -> Result<Resp<Vec<BinSummary>>, NotFound<String>> {
     let repo = repo_lock.read();
-    let mut resp = repo.issue_bins.clone();
+
+    // resolve
+    let profile_index = config.profiles.iter()
+        .enumerate()
+        .find(|&(_, profile)| profile.name == profile_name)
+        .map(|(i, _)| i)
+        .ok_or_else(||
+            NotFound(format!("profile not found: {:?}", profile_name)))?;
+
+    let mut bins = repo.repo_profiles[profile_index].issue_bins.clone();
 
     // process query params
     if remove_main_labels {
-        for bin in &mut resp {
+        for bin in &mut bins {
             if let Some(main_label) = bin.main_label.clone() {
                 for issue in &mut bin.issues {
                     issue.labels.remove_item(&main_label);
@@ -97,7 +137,7 @@ fn bin_issues(repo_lock: State<RepoMutex>, remove_main_labels: bool) -> Resp<Vec
         }
     }
 
-    resp_wrap(resp)
+    Ok(resp_wrap(bins))
 }
 
 fn try_main() -> Result<!, Error> {
@@ -115,7 +155,10 @@ fn try_main() -> Result<!, Error> {
         .mount("/static", StaticFiles::from(base.join("static")))
         .mount("/", routes!(
             root,
+            repo_name,
+            repo_hyperlink,
             list_issues,
+            list_profiles,
             bin_issues,
         ))
         .launch();

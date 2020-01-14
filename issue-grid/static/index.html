@@ -156,24 +156,29 @@
     }
 
     update(bins) {
+      console.log(bins);
       this.bins.update(bins);
     }
   }
 
   class PageHeader {
-    constructor() {
+    constructor(repo) {
       this.repo_name = el('a.repo-name');
       this.el = el('div.header-box', [
         this.repo_name,
       ]);
 
-      this.repo_name.textContent = 'correlation-one/c1';
-      setAttr(this.repo_name, { href: 'https://github.com/correlation-one/c1' });
+      repo && this.update(repo);
+    }
+
+    update(repo) {
+      this.repo_name.textContent = repo.repo_name;
+      setAttr(this.repo_name, { href: repo.repo_hyperlink });
     }
   }
 
   class App {
-    constructor(bins) {
+    constructor(state) {
       this.grid = new IssueGrid();
       this.header = new PageHeader();
 
@@ -182,20 +187,52 @@
         el('div.grid-box', this.grid),
       ]);
 
-      bins && this.update(bins);
+      state && this.update(state);
     }
 
-    update(bins) {
-      this.grid.update(bins);
+    update(state) {
+      this.header.update(state.repo);
+      this.grid.update(state.bins);
     }
   }
 
   function main() {
+    function resp_json(resp) {
+      return resp.json();
+    }
+
+    Promise.all([
+      fetch('/api/repo_name').then(resp_json),
+      fetch('/api/repo_hyperlink').then(resp_json),
+      fetch('/api/list_profiles').then(resp_json),
+    ]).then(values => {
+      return {
+        repo_name: values[0],
+        repo_hyperlink: values[1],
+        profiles: values[2],
+      };
+    }).then(repo => {
+      let profile = encodeURI(repo.profiles[0].name);
+
+      return fetch(`/api/${profile}/bin_issues?remove_main_labels=true`)
+        .then(resp_json)
+        .then(bins => {
+          return {
+            repo: repo,
+            bins: bins,
+          };
+        });
+    }).then(state => {
+      mount(document.body, new App(state));
+    });
+
+    /*
     fetch('/api/bin_issues?remove_main_labels=true')
       .then(resp => resp.json())
       .then(data => {
         mount(document.body, new App(data));
       });
+     */
   }
   main();
 

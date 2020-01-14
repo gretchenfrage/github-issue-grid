@@ -13,6 +13,12 @@ pub mod fr {
     pub struct Config {
         pub auth_var: String,
         pub repo: String,
+        pub profiles: Vec<ProfileConfig>,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct ProfileConfig {
+        pub name: String,
         pub bins: Vec<BinConfig>,
     }
 
@@ -74,24 +80,42 @@ remodel! {
         Ok(tuple)
     }
 
-    (from: fr::Config) -> to::Config {
-        let fr::Config {
-            auth_var,
-            repo,
+    (from: fr::ProfileConfig) -> to::Profile {
+        let fr::ProfileConfig {
+            name,
             bins,
         } = from;
-
-        let auth = GithubAuth::from_env(&auth_var)
-            .map_err(|e| format_err!("{}", e))?;
 
         let bins = bins.into_iter()
             .map(conv)
             .collect::<Result<PatternList<to::BinConfig>, Error>>()?;
 
+        let pcfg = to::Profile {
+            name,
+            bins,
+        };
+
+        Ok(pcfg)
+    }
+
+    (from: fr::Config) -> to::Config {
+        let fr::Config {
+            auth_var,
+            repo,
+            profiles,
+        } = from;
+
+        let auth = GithubAuth::from_env(&auth_var)
+            .map_err(|e| format_err!("{}", e))?;
+
+        let profiles = profiles.into_iter()
+            .map(conv)
+            .collect::<Result<Vec<to::Profile>, Error>>()?;
+
         let cfg = to::Config {
             auth,
             repo: conv(repo)?,
-            bins,
+            profiles,
         };
         Ok(cfg)
     }

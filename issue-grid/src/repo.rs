@@ -1,7 +1,7 @@
 
 use crate::{
     model::{IssueSummary, Label, BinSummary},
-    config::Config,
+    config::{Config, Profile},
     remodel::{
         Conv,
         github::Github as GithubRemodel,
@@ -22,6 +22,11 @@ use futures::{
 /// Mutable global repo data.
 pub struct Repo {
     pub issues: Vec<IssueSummary>,
+    pub repo_profiles: Vec<RepoProfile>,
+}
+
+/// Repo data for a specific profile.
+pub struct RepoProfile {
     pub issue_bins: Vec<BinSummary>,
 }
 
@@ -68,12 +73,30 @@ impl Repo {
         // remodel
         let issues: Vec<IssueSummary> = issues.into_iter()
             .map(|issue|
-                GithubRemodel::conv((issue, &user_details))
-            )
+                GithubRemodel::conv((issue, &user_details)))
             .collect();
 
+        // build profiles
+        let repo_profiles = config.profiles.iter()
+            .map(|profile| RepoProfile::build(
+                &config,
+                profile,
+                issues.as_slice(),
+            ))
+            .collect();
+
+        // done
+        Ok(Repo {
+            issues,
+            repo_profiles,
+        })
+    }
+}
+
+impl RepoProfile {
+    fn build(_config: &Config, profile: &Profile, issues: &[IssueSummary]) -> Self {
         // bin
-        let issue_bins = config.bins.bin(issues.clone(), true)
+        let issue_bins = profile.bins.bin(issues.to_vec(), true)
             .into_iter()
             .map(|(bin_issues, bin_cfg)| {
                 // 1. sort
@@ -88,7 +111,7 @@ impl Repo {
                 match bin_cfg {
                     Some(bin_cfg) => {
                         let main_label = bin_cfg.main_label.as_ref()
-                            .and_then(|label| find_label(&issues, label));
+                            .and_then(|label| find_label(issues, label));
 
                         BinSummary {
                             name: bin_cfg.name.clone(),
@@ -109,11 +132,7 @@ impl Repo {
             })
             .collect();
 
-        // done
-        Ok(Repo {
-            issues,
-            issue_bins,
-        })
+        RepoProfile { issue_bins }
     }
 }
 

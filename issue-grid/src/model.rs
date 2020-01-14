@@ -36,6 +36,12 @@ pub struct User {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ProfileMeta {
+    pub name: String,
+    pub number: usize,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(transparent)]
 pub struct Color(
     // valid CSS color, includes the pound.

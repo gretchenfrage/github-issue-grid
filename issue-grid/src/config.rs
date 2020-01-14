@@ -16,6 +16,12 @@ use failure::Error;
 pub struct Config {
     pub auth: GithubAuth,
     pub repo: RepoLocation,
+    pub profiles: Vec<Profile>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Profile {
+    pub name: String,
     pub bins: PatternList<BinConfig>,
 }
 

@@ -263,3 +263,9 @@ impl Display for IssueState {
         f.write_str(self.to_str())
     }
 }
+
+impl ToString for RepoLocation {
+    fn to_string(&self) -> String {
+        format!("{}/{}", self.user, self.repo)
+    }
+}
