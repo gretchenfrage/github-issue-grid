@@ -7,12 +7,17 @@ use crate::{
         github::Github as GithubRemodel,
     }
 };
-use github_issues_export_lib::{Github, IssueState};
+use github_issues_export_lib::{Github, IssueState, model as gh};
 use std::{
     sync::RwLock,
     ops::{Deref, DerefMut},
+    collections::HashMap,
 };
 use failure::{Error, format_err};
+use futures::{
+    prelude::*,
+    stream::iter_ok,
+};
 
 /// Mutable global repo data.
 pub struct Repo {
@@ -44,8 +49,28 @@ impl Repo {
         let issues = core.run(issues)
             .map_err(|e| format_err!("{}", e))?;
 
+        // fetch usernames
+        let user_details = issues.iter()
+            .map(|issue| issue.user.login.clone())
+            .map(|login| {
+                github.user_details(&login)
+                    .map(move |details| (login, details))
+            });
+        let user_details = iter_ok(user_details)
+            .buffer_unordered(16)
+            .collect();
+        let user_details = core.run(user_details)
+            .map_err(|e| format_err!("{}", e))?;
+        let user_details: HashMap<String, gh::UserDetails> = user_details
+            .into_iter()
+            .collect();
+
         // remodel
-        let issues: Vec<IssueSummary> = GithubRemodel::conv(issues);
+        let issues: Vec<IssueSummary> = issues.into_iter()
+            .map(|issue|
+                GithubRemodel::conv((issue, &user_details))
+            )
+            .collect();
 
         // bin
         let issue_bins = config.bins.bin(issues.clone(), true)
@@ -58,8 +83,6 @@ impl Repo {
                     Some(pat_list) => pat_list.sort(bin_issues),
                     None => bin_issues,
                 };
-
-
 
                 // 2. generate model
                 match bin_cfg {

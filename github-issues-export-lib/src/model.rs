@@ -20,6 +20,16 @@ pub struct User {
     pub site_admin: bool,
 }
 
+/// HTTP resource model for github detailed user request.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserDetails {
+    pub id: u64,
+    pub login: String,
+    pub avatar_url: String,
+    pub html_url: String,
+    pub name: String,
+}
+
 /// HTTP resource model for github issue.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Issue {

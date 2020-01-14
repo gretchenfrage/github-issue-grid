@@ -7,6 +7,7 @@
   position: absolute;
   z-index: 100;
   transition: color 0.085s, background-color 0.085s, border-color 0.085s;
+  white-space: nowrap;
 }
 
 .has-tooltip:not(:hover) .tooltip, .has-tooltip:not(:hover) .user-icon-tooltip-pos, .has-tooltip:not(:hover) .user-icon-tooltip {

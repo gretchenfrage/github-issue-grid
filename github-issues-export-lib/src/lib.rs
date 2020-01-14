@@ -211,6 +211,13 @@ impl Github {
                 .collect::<Vec<model::IssueWithComments>>()
             )
     }
+
+    pub fn user_details(
+        &self,
+        login: &str
+    ) -> impl Future<Item=model::UserDetails, Error=Error> {
+        self.get(&format!("{}/users/{}", GITHUB_API_ENDPOINT, login))
+    }
 }
 
 /// Possible states to fetch issues by.

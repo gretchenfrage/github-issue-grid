@@ -30,6 +30,7 @@ pub struct BinSummary {
 pub struct User {
     pub id: u64,
     pub name: String,
+    pub login: String,
     pub icon_url: String,
     pub hyperlink: String,
 }

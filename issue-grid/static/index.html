@@ -57,6 +57,7 @@
       setAttr(this.icon, { src: user.icon_url });
       setAttr(this.icon_link, { href: user.hyperlink });
       setAttr(this.tooltip_link, { href: user.hyperlink });
+      console.log(`user name = ${user.name}`);
       this.tooltip_link.innerText = user.name;
     }
   }

@@ -13,6 +13,7 @@ $transition-time: 0.085s;
   transition: color $transition-time,
               background-color $transition-time,
               border-color $transition-time;
+  white-space: nowrap;
 }
 
 .has-tooltip:not(:hover) .tooltip {

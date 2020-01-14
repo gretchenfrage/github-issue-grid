@@ -5,8 +5,12 @@ macro_rules! remodel {
     type $remodel:ident remodels ($T:ident) -> ($($Result:tt)*);
 
     $(
-    ($from:ident : $A:ty) -> $B:ty $body:block
+
+    ( $($in:tt)* ) -> $out:ty $body:block
+
     )*
+
+
     )=>{
         $(#[$docs])*
         pub enum $remodel {}
@@ -23,9 +27,39 @@ macro_rules! remodel {
         }
 
         $(
-        impl Conv<$A, $B> for $remodel {
+        remodel!(@block, $remodel,
+            ( $($in)* ) -> $out $body
+        );
+        )*
+    };
+
+    (@block, $remodel:ident,
+        ($from:ident : $A:ty) -> $B:ty $body:block
+    )=>{
+        impl Conv<
+            $A,
+            $B,
+        > for $remodel {
             fn conv($from: $A) -> Self::Result $body
         }
-        )*
-    }
+    };
+
+    (@block, $remodel:ident,
+        ((
+            $from:ident : $A:ty,
+            $( $ctx:ident : &$CtxTy:ty ),* $(,)?
+        )) -> $B:ty $body:block
+    )=>{
+        impl<'a> Conv<
+            ($A, $(&'a $CtxTy),*),
+            $B,
+        > for $remodel {
+            fn conv(
+                tuple: ($A, $(&'a $CtxTy),*)
+            ) -> Self::Result {
+                let ($from, $( $ctx ),*) = tuple;
+                $body
+            }
+        }
+    };
 }
