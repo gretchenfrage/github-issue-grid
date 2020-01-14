@@ -160,12 +160,37 @@
     }
   }
 
+  class PageHeader {
+    constructor() {
+      
+
+      this.el = text('aaaaa');
+    }
+  }
+
+  class App {
+    constructor(bins) {
+      this.grid = new IssueGrid();
+      this.header = new PageHeader();
+
+      this.el = el('div.wh100', [
+        this.header,
+        el('div.wh100.p-rel', this.grid),
+      ]);
+
+      bins && this.update(bins);
+    }
+
+    update(bins) {
+      this.grid.update(bins);
+    }
+  }
+
   function main() {
     fetch('/api/bin_issues?remove_main_labels=true')
       .then(resp => resp.json())
       .then(data => {
-        let grid = new IssueGrid(data);
-        mount(document.body, grid);
+        mount(document.body, new App(data));
       });
   }
   main();
