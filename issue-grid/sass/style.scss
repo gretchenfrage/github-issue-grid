@@ -119,6 +119,7 @@ $user-icon-size: 24px;
   @extend .tooltip;
 
   right: $user-icon-size + $comfy-margin * 2;
+  top: -1.5px;
 }
 
 .user-icon-tooltip-style {

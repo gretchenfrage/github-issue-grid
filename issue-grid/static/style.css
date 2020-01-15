@@ -98,6 +98,7 @@ a:hover {
 
 .user-icon-tooltip-pos, .user-icon-tooltip {
   right: 32px;
+  top: -1.5px;
 }
 
 .user-icon-tooltip-style, .user-icon-tooltip {
