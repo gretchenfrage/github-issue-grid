@@ -176,7 +176,7 @@
   class PageHeader {
     constructor(state) {
       this.repo_name = el('a.repo-name');
-      this.profile_select = list('select', ProfileOption);
+      this.profile_select = list('select.profile-select', ProfileOption);
       console.log(this.profile_select);
       this.el = el('div.header-box', [
         this.repo_name,
