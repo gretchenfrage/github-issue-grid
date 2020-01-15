@@ -218,11 +218,9 @@ a:hover {
 
 .profile-select {
   font-size: 18pt;
-  padding: 4px;
   color: #eeeeee;
   background-color: #2c3e50;
   border: 2px solid #eeeeee;
-  border-radius: 1px;
   appearance: none;
   float: right;
   min-width: 2.5in;
@@ -234,6 +232,31 @@ a:hover {
 
 .profile-select:focus {
   outline: none;
+}
+
+.revalidate-button {
+  height: 35px;
+  font-size: 14pt;
+  color: black;
+  background-color: #c1c7c8;
+  border-color: #c1c7c8;
+  border-width: 2px;
+  border-radius: 5px;
+  appearance: none;
+  padding: 4px 1em;
+  margin: 0 0.5in;
+  float: right;
+  box-shadow: 4px 4px 3px rgba(0, 0, 0, 0.5);
+  text-shadow: 1.5px 1.5px 1.5px rgba(0, 0, 0, 0.2);
+}
+
+.revalidate-button:focus {
+  outline: none;
+}
+
+.revalidate-button-red {
+  background-color: #c0392b !important;
+  box-shadow: 0px 0px 1in rgba(231, 76, 60, 0.7), 0px 0px 1in rgba(231, 76, 60, 0.7), 0px 0px 1in rgba(231, 76, 60, 0.7) !important;
 }
 
 /*# sourceMappingURL=style.css.map */

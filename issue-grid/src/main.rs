@@ -107,29 +107,31 @@ fn list_profiles(config: State<Config>) -> Resp<Vec<ProfileMeta>> {
     resp_wrap(list)
 }
 
-#[get("/api/<profile_name>/bin_issues?<remove_main_labels>")]
+#[get("/api/<profile_name>/bin_issues?<remove_main_labels>&<revalidate>")]
 fn bin_issues(
     config: State<Config>,
     repo_lock: State<RepoMutex>,
     fetch_lock: State<FetchLock>,
     profile_name: String,
     remove_main_labels: bool,
+    revalidate: bool,
 ) -> Result<Resp<Vec<BinSummary>>, NotFound<String>> {
-    /*
-    let (guard, first) = fetch_lock.acquire();
-    if first {
-        match Repo::fetch(&config) {
-            Ok(repo) => {
-                let mut store = repo_lock.write();
-                *store = repo;
-            },
-            Err(e) => {
-                eprintln!("[ERROR] fetch repo: {}", e);
-            },
+    if revalidate {
+        let (guard, first) = fetch_lock.acquire();
+        if first {
+            println!("[INFO] re-fetching data");
+            match Repo::fetch(&config) {
+                Ok(repo) => {
+                    let mut store = repo_lock.write();
+                    *store = repo;
+                },
+                Err(e) => {
+                    eprintln!("[ERROR] fetch repo: {}", e);
+                },
+            }
         }
+        drop(guard);
     }
-    drop(guard);
-    */
 
     let repo = repo_lock.read();
 

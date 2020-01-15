@@ -260,11 +260,9 @@ $page-header-padding: 10px;
 
 .profile-select {
   font-size: 18pt;
-  padding: $comfy-margin;
   color: #eeeeee;
   background-color: #2c3e50;
   border: 2px solid #eeeeee;
-  border-radius: 1px;
   appearance: none;
   float: right;
 
@@ -277,4 +275,37 @@ $page-header-padding: 10px;
 
 .profile-select:focus {
   outline: none;
+}
+
+.revalidate-button {
+  height: 35px;
+  font-size: 14pt;
+  //color: black;
+  //background-color: rgb(255, 255, 255);
+  color: black;
+  background-color: #c1c7c8;
+  border-color: #c1c7c8;
+  border-width: 2px;
+  border-radius: 5px;
+  appearance: none;
+  padding: $comfy-margin 1em;
+  margin: 0 0.5in;
+  float: right;
+  box-shadow: 4px 4px 3px transparentize(black, 0.5);
+  text-shadow: 1.5px 1.5px 1.5px transparentize(black, 0.8);
+}
+
+.revalidate-button:focus {
+  outline: none;
+}
+
+$revalidate-glow-radius: 1in;
+$revalidate-glow-color: transparentize(#e74c3c, 0.3);
+
+.revalidate-button-red {
+  background-color: #c0392b !important;
+  box-shadow:
+          0px 0px $revalidate-glow-radius $revalidate-glow-color,
+          0px 0px $revalidate-glow-radius $revalidate-glow-color,
+          0px 0px $revalidate-glow-radius $revalidate-glow-color !important;
 }

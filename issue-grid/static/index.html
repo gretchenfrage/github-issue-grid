@@ -173,14 +173,36 @@
     }
   }
 
+  class RevalidateButton {
+    constructor(callback) {
+      this.el = el('button.revalidate-button', 'revalidate');
+
+      $(this.el).click(() => this.on_click());
+
+      callback && this.update(callback);
+    }
+
+    update(callback) {
+      setAttr(this.el, { className: 'revalidate-button' });
+      this.callback = callback;
+    }
+
+    on_click() {
+      setAttr(this.el, { className: 'revalidate-button revalidate-button-red' });
+      this.callback();
+    }
+  }
+
   class PageHeader {
     constructor(state) {
       this.repo_name = el('a.repo-name');
+      this.revalidate_button = new RevalidateButton();
       this.profile_select = list('select.profile-select', ProfileOption);
-      console.log(this.profile_select);
+
       this.el = el('div.header-box', [
         this.repo_name,
         this.profile_select,
+        this.revalidate_button,
       ]);
 
       $(this.profile_select.el).change(() => this.on_change());
@@ -190,14 +212,22 @@
 
     update(state) {
       this.repo_name.textContent = state.repo.repo_name;
-      this.profile_select.update(state.repo.profiles);
       setAttr(this.repo_name, { href: state.repo.repo_hyperlink });
+      this.profile_select.update(state.repo.profiles);
+      this.revalidate_button.update(() => this.revalidate());
+
+      this.active_profile = state.active_profile;
       this.profile_callback = state.profile_callback;
+
     }
 
     on_change() {
       let choice = $(this.profile_select.el).find(":selected").val();
       this.profile_callback(choice);
+    }
+
+    revalidate() {
+      this.profile_callback(this.active_profile, true);
     }
   }
 
@@ -238,13 +268,14 @@
     }).then(repo => {
       let app = new App();
 
-      function set_profile(profile) {
-        return fetch(`/api/${encodeURI(profile)}/bin_issues?remove_main_labels=true`)
+      function set_profile(profile, revalidate) {
+        return fetch(`/api/${encodeURI(profile)}/bin_issues?remove_main_labels=true&revalidate=${!!revalidate}`)
           .then(resp_json)
           .then(bins => {
             let state = {
               repo: repo,
               bins: bins,
+              active_profile: profile,
               profile_callback: set_profile,
             };
 
