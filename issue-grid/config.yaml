@@ -1,6 +1,24 @@
 auth_var: GITHUB_TOKEN
 repo: correlation-one/c1
 profiles:
+  - name: 'by status'
+    bins:
+      - filter: '^status: help-wanted'
+        main_label: 'status: help-wanted'
+        name: 'Help Wanted'
+
+      - filter: '^status: work-in-progress'
+        main_label: 'status: work-in-progress'
+        name: 'In Progress'
+
+      - filter: '^status: blocked'
+        main_label: 'status: blocked'
+        name: 'Blocked'
+
+      - filter: '^status: ready-for-review'
+        main_label: 'status: ready-for-review'
+        name: 'Ready for Review'
+
   - name: 'by category'
     bins:
       - filter: "^category: enhancement"
@@ -19,20 +37,3 @@ profiles:
         main_label: "category: question"
         name: "Question"
 
-  - name: 'by status'
-    bins:
-      - filter: '^status: help-wanted'
-        main_label: 'status: help-wanted'
-        name: 'Help Wanted'
-
-      - filter: '^status: ready-for-review'
-        main_label: 'status: ready-for-review'
-        main: 'Ready for Review'
-
-      - filter: '^status: work-in-progress'
-        main_label: 'status: work-in-progress'
-        name: 'In Progress'
-
-      - filter: '^status: blocked'
-        main_label: 'status: blocked'
-        name: 'Blocked'

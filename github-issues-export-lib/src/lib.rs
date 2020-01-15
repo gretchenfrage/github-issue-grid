@@ -29,8 +29,8 @@ use std::{
     sync::Arc,
 };
 use futures::{
-    {Future, Stream},
-    future,
+    prelude::*,
+    stream,
 };
 use hyper::{
     {Client, Method, Request, Uri},
@@ -191,25 +191,15 @@ impl Github {
     ) -> impl Future<Item=Vec<model::IssueWithComments>, Error=Error> {
         let github = self.clone();
 
-        future::join_all({
-            issues.into_iter()
-                .map(move |issue| {
-                    let get_comment = github
-                        .get::<Vec<model::Comment>>(&issue.comments_url);
-                    Future::join(
-                        future::ok(issue),
-                        get_comment,
-                    )
-                })
-        })
-            .map(|issues| issues
-                .into_iter()
-                .map(|(issue, comments)| model::IssueWithComments {
+        stream::iter_ok(issues.into_iter())
+            .map(move |issue| github
+                .get::<Vec<model::Comment>>(&issue.comments_url)
+                .map(move |comments| model::IssueWithComments {
                     issue,
                     comments,
-                })
-                .collect::<Vec<model::IssueWithComments>>()
-            )
+                }))
+            .buffered(32)
+            .collect()
     }
 
     pub fn user_details(

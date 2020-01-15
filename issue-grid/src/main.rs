@@ -16,7 +16,7 @@ extern crate serde_yaml;
 extern crate regex;
 
 use crate::{
-    repo::{Repo, RepoMutex},
+    repo::{Repo, RepoMutex, FetchLock},
     config::Config,
     model::{IssueSummary, BinSummary, ProfileMeta},
 };
@@ -111,9 +111,26 @@ fn list_profiles(config: State<Config>) -> Resp<Vec<ProfileMeta>> {
 fn bin_issues(
     config: State<Config>,
     repo_lock: State<RepoMutex>,
+    fetch_lock: State<FetchLock>,
     profile_name: String,
     remove_main_labels: bool,
 ) -> Result<Resp<Vec<BinSummary>>, NotFound<String>> {
+    /*
+    let (guard, first) = fetch_lock.acquire();
+    if first {
+        match Repo::fetch(&config) {
+            Ok(repo) => {
+                let mut store = repo_lock.write();
+                *store = repo;
+            },
+            Err(e) => {
+                eprintln!("[ERROR] fetch repo: {}", e);
+            },
+        }
+    }
+    drop(guard);
+    */
+
     let repo = repo_lock.read();
 
     // resolve
@@ -152,6 +169,7 @@ fn try_main() -> Result<!, Error> {
     let err = rocket::ignite()
         .manage(config)
         .manage(repo_lock)
+        .manage(FetchLock::new())
         .mount("/static", StaticFiles::from(base.join("static")))
         .mount("/", routes!(
             root,

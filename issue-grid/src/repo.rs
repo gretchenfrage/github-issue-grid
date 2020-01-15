@@ -9,7 +9,7 @@ use crate::{
 };
 use github_issues_export_lib::{Github, IssueState, model as gh};
 use std::{
-    sync::RwLock,
+    sync::{RwLock, Mutex},
     ops::{Deref, DerefMut},
     collections::HashMap,
 };
@@ -133,6 +133,25 @@ impl RepoProfile {
             .collect();
 
         RepoProfile { issue_bins }
+    }
+}
+
+// == fetch lock ==
+
+pub struct FetchLock(Mutex<()>);
+
+impl FetchLock {
+    pub fn new() -> Self {
+        FetchLock(Mutex::new({}))
+    }
+
+    pub fn acquire<'a>(&'a self) -> (impl Drop + 'a, bool) {
+        self.0.try_lock().ok()
+            .map(|guard| (guard, true))
+            .unwrap_or_else(|| {
+                let guard = self.0.lock().unwrap();
+                (guard, false)
+            })
     }
 }
 

@@ -57,7 +57,6 @@
       setAttr(this.icon, { src: user.icon_url });
       setAttr(this.icon_link, { href: user.hyperlink });
       setAttr(this.tooltip_link, { href: user.hyperlink });
-      console.log(`user name = ${user.name}`);
       this.tooltip_link.innerText = user.name;
     }
   }
@@ -161,19 +160,44 @@
     }
   }
 
-  class PageHeader {
-    constructor(repo) {
-      this.repo_name = el('a.repo-name');
-      this.el = el('div.header-box', [
-        this.repo_name,
-      ]);
+  class ProfileOption {
+    constructor(profile) {
+      this.el = el('option');
 
-      repo && this.update(repo);
+      profile && this.update(profile);
     }
 
-    update(repo) {
-      this.repo_name.textContent = repo.repo_name;
-      setAttr(this.repo_name, { href: repo.repo_hyperlink });
+    update(profile) {
+      this.el.textContent = profile.name;
+      setAttr(this.el, { val: profile.name });
+    }
+  }
+
+  class PageHeader {
+    constructor(state) {
+      this.repo_name = el('a.repo-name');
+      this.profile_select = list('select', ProfileOption);
+      console.log(this.profile_select);
+      this.el = el('div.header-box', [
+        this.repo_name,
+        this.profile_select,
+      ]);
+
+      $(this.profile_select.el).change(() => this.on_change());
+
+      state && this.update(state);
+    }
+
+    update(state) {
+      this.repo_name.textContent = state.repo.repo_name;
+      this.profile_select.update(state.repo.profiles);
+      setAttr(this.repo_name, { href: state.repo.repo_hyperlink });
+      this.profile_callback = state.profile_callback;
+    }
+
+    on_change() {
+      let choice = $(this.profile_select.el).find(":selected").val();
+      this.profile_callback(choice);
     }
   }
 
@@ -191,8 +215,8 @@
     }
 
     update(state) {
-      this.header.update(state.repo);
       this.grid.update(state.bins);
+      this.header.update(state);
     }
   }
 
@@ -212,8 +236,29 @@
         profiles: values[2],
       };
     }).then(repo => {
-      let profile = encodeURI(repo.profiles[0].name);
+      let app = new App();
 
+      function set_profile(profile) {
+        return fetch(`/api/${encodeURI(profile)}/bin_issues?remove_main_labels=true`)
+          .then(resp_json)
+          .then(bins => {
+            let state = {
+              repo: repo,
+              bins: bins,
+              profile_callback: set_profile,
+            };
+
+            app.update(state);
+          });
+      }
+
+      set_profile(repo.profiles[0].name)
+        .then(() => {
+          mount(document.body, app);
+        })
+
+
+      /*
       return fetch(`/api/${profile}/bin_issues?remove_main_labels=true`)
         .then(resp_json)
         .then(bins => {
@@ -222,8 +267,7 @@
             bins: bins,
           };
         });
-    }).then(state => {
-      mount(document.body, new App(state));
+        */
     });
 
     /*
